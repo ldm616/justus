@@ -3,7 +3,6 @@ import AuthGate from './components/AuthGate';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
 import PhotoGrid from './components/PhotoGrid';
-import Header from './components/Header';
 
 export default function App(){
   return (
