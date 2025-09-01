@@ -5,7 +5,10 @@
       "Bash(npx tailwindcss init:*)",
       "Bash(npm i:*)",
       "Bash(npm cache clean:*)",
-      "Bash(sudo chown:*)"
+      "Bash(sudo chown:*)",
+      "Bash(npm run seed:dev:*)",
+      "Bash(npx netlify:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

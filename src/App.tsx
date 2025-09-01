@@ -1,11 +1,29 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
+import AuthGate from './components/AuthGate';
+import Login from './pages/Login';
+import Profile from './pages/Profile';
+import PhotoUploaderDev from './components/PhotoUploaderDev';
 
-function App() {
+function Home() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       <Header />
-      <main className="p-4">Hello, justus.today</main>
-    </div>
+      <div className="p-4">
+        <PhotoUploaderDev />
+      </div>
+    </>
   );
 }
-export default App;
+
+export default function App(){
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/profile" element={<AuthGate><Header /><Profile /></AuthGate>} />
+        <Route path="/" element={<AuthGate><Home /></AuthGate>} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
