@@ -8,7 +8,11 @@
       "Bash(sudo chown:*)",
       "Bash(npm run seed:dev:*)",
       "Bash(npx netlify:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []
