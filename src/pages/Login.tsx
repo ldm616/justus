@@ -36,17 +36,6 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white p-6">
       <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-            </svg>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Gelbow</h1>
-          </div>
-          <p className="text-gray-600">Fix your golfer's elbow one day at a time</p>
-        </div>
-
         {/* Login Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           <h2 className="text-2xl font-bold mb-6 text-center">Log In</h2>
@@ -141,10 +130,6 @@ export default function Login() {
             </div>
           </div>
         </div>
-
-        <p className="text-xs text-gray-500 text-center mt-6">
-          © 2025 ElbowHero
-        </p>
       </div>
       
       <Footer />
