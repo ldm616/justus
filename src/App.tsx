@@ -1,20 +1,9 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Header from './components/Header';
 import AuthGate from './components/AuthGate';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
-import PhotoUploaderDev from './components/PhotoUploaderDev';
-
-function Home() {
-  return (
-    <>
-      <Header />
-      <div className="p-4">
-        <PhotoUploaderDev />
-      </div>
-    </>
-  );
-}
+import PhotoGrid from './components/PhotoGrid';
+import Header from './components/Header';
 
 export default function App(){
   return (
@@ -22,7 +11,7 @@ export default function App(){
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/profile" element={<AuthGate><Header /><Profile /></AuthGate>} />
-        <Route path="/" element={<AuthGate><Home /></AuthGate>} />
+        <Route path="/" element={<AuthGate><PhotoGrid /></AuthGate>} />
       </Routes>
     </BrowserRouter>
   );
