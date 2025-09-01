@@ -146,7 +146,7 @@ export default function PhotoUpload({ isOpen, onClose, onUploadComplete }: Photo
                 <button
                   onClick={handleUpload}
                   disabled={uploading}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
                 >
                   {uploading ? 'Uploading...' : 'Upload'}
                 </button>
