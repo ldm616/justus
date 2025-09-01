@@ -4,9 +4,16 @@ This template provides a minimal setup to get React working in Vite with HMR and
 
 ## Development
 
-```bash
-npm run dev
-```
+1. Set up environment variables:
+   - Copy `.env.example` to `.env.local`
+   - Add your Supabase credentials:
+     - `VITE_SUPABASE_URL`: Your Supabase project URL
+     - `VITE_SUPABASE_ANON_KEY`: Your Supabase anon/public key
+
+2. Run the development server:
+   ```bash
+   npm run dev
+   ```
 
 Currently, two official plugins are available:
 
