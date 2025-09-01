@@ -10,18 +10,37 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let unsub: any;
-    supabase.auth.getSession().then(async ({ data }) => {
+    supabase.auth.getSession().then(async ({ data, error }) => {
+      if (error) {
+        console.error('Auth error:', error);
+        navigate('/login', { replace: true });
+        setReady(true);
+        return;
+      }
       if (!data.session) {
         navigate('/login', { replace: true });
         setReady(true);
         return;
       }
-      await ensureProfile(familyId);
+      try {
+        await ensureProfile(familyId);
+      } catch (err) {
+        console.error('Profile error:', err);
+      }
+      setReady(true);
+    }).catch(err => {
+      console.error('Session check failed:', err);
       setReady(true);
     });
     const sub = supabase.auth.onAuthStateChange(async (_evt, session) => {
       if (!session) navigate('/login', { replace: true });
-      else await ensureProfile(familyId);
+      else {
+        try {
+          await ensureProfile(familyId);
+        } catch (err) {
+          console.error('Profile update error:', err);
+        }
+      }
     });
     unsub = sub.data.subscription;
     return () => unsub?.unsubscribe();

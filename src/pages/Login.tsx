@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import Footer from '../components/Footer';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -145,6 +146,8 @@ export default function Login() {
           © 2025 ElbowHero
         </p>
       </div>
+      
+      <Footer />
     </div>
   );
 }

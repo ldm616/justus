@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import PhotoUpload from './PhotoUpload';
+import Footer from './Footer';
 
 interface Photo {
   id: string;
@@ -151,6 +152,8 @@ export default function PhotoGrid() {
           fetchPhotos();
         }}
       />
+      
+      <Footer />
     </div>
   );
 }

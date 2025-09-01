@@ -10,7 +10,7 @@ export default function App(){
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/profile" element={<AuthGate><Header /><Profile /></AuthGate>} />
+        <Route path="/profile" element={<AuthGate><Profile /></AuthGate>} />
         <Route path="/" element={<AuthGate><PhotoGrid /></AuthGate>} />
       </Routes>
     </BrowserRouter>

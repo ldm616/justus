@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import Footer from '../components/Footer';
 
 export default function Profile() {
   const [display, setDisplay] = useState('');
@@ -170,6 +171,8 @@ export default function Profile() {
           </form>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 }
