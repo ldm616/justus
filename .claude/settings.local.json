@@ -3,7 +3,9 @@
     "allow": [
       "Bash(npm install:*)",
       "Bash(npx tailwindcss init:*)",
-      "Bash(npm i:*)"
+      "Bash(npm i:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(sudo chown:*)"
     ],
     "deny": [],
     "ask": []
