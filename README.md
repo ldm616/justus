@@ -15,6 +15,22 @@ This template provides a minimal setup to get React working in Vite with HMR and
    npm run dev
    ```
 
+## Seed Development Data
+
+To create test users and a test family:
+
+1. Copy `.env.secrets.example` to `.env.secrets`
+2. Fill in your Supabase service role key and URL
+3. Run the seed script:
+   ```bash
+   npm run seed:dev
+   ```
+
+This will create:
+- A "Lewis" family
+- 4 test users (malcolm, carol, claire, callum @justus.local)
+- Output includes the FAMILY_ID and a table of test users
+
 Currently, two official plugins are available:
 
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
