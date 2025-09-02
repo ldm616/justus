@@ -1,3 +1,92 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white dark:bg-gray-900;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: subpixel-antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: #1a1a1a;
+    min-height: 100vh;
+  }
+  
+  h2 {
+    @apply text-xl font-semibold text-gray-900 dark:text-white;
+  }
+  
+  h3 {
+    @apply text-lg font-semibold text-gray-900 dark:text-white;
+  }
+  
+  /* Standardized text colors */
+  .text-muted {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+  
+  /* Header styles */
+  .header-primary {
+    @apply bg-indigo-600;
+    height: 60px;
+  }
+  
+  @media (min-width: 768px) {
+    .header-primary {
+      height: 48px;
+    }
+  }
+  
+  /* Button styles from 2doozy */
+  .btn-primary {
+    @apply px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors;
+  }
+  
+  .btn-secondary {
+    @apply px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md transition-colors;
+  }
+  
+  .btn-danger {
+    @apply px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors;
+  }
+  
+  /* Modal styles */
+  .modal-backdrop {
+    @apply fixed inset-0 bg-black/50 z-[60];
+  }
+  
+  .modal-content {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-xl;
+  }
+  
+  /* Form input styles */
+  .form-input {
+    @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500;
+  }
+  
+  /* Card styles */
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700;
+  }
+  
+  /* Avatar styles */
+  .avatar {
+    @apply rounded-full object-cover;
+  }
+  
+  .avatar-placeholder {
+    @apply rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar utilities */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

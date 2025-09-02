@@ -31,7 +31,11 @@
       "Read(/Users/malcolmlewis/Documents/Repos/2doozy/supabase/**)",
       "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/components/**)",
       "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/**)",
-      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/components/**)"
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/components/**)",
+      "Bash(cat:*)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/components/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/**)"
     ],
     "deny": [],
     "ask": []

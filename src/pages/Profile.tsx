@@ -14,8 +14,8 @@ const EditUsernameModal: React.FC<EditUsernameModalProps> = ({ currentUsername, 
   const [username, setUsername] = useState(currentUsername || '');
   
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full p-6">
+    <div className="modal-backdrop flex items-center justify-center p-4">
+      <div className="modal-content max-w-sm w-full p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Edit Username</h2>
           <button
@@ -33,21 +33,21 @@ const EditUsernameModal: React.FC<EditUsernameModalProps> = ({ currentUsername, 
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Enter username"
             maxLength={15}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="form-input"
             autoFocus
           />
           
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md"
+              className="btn-secondary"
             >
               Cancel
             </button>
             <button
               onClick={() => onSave(username.trim())}
               disabled={!username.trim()}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md flex items-center gap-2"
+              className="btn-primary disabled:bg-blue-400 flex items-center gap-2"
             >
               <Check className="w-4 h-4" />
               Save
@@ -84,8 +84,8 @@ const ChangeEmailModal: React.FC<{ currentEmail: string; onClose: () => void; on
   const canSave = email && confirmEmail && email === confirmEmail && email !== currentEmail;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full p-6">
+    <div className="modal-backdrop flex items-center justify-center p-4">
+      <div className="modal-content max-w-sm w-full p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Change Email</h2>
           <button
@@ -102,7 +102,7 @@ const ChangeEmailModal: React.FC<{ currentEmail: string; onClose: () => void; on
             value={email}
             onChange={e => setEmail(e.target.value)}
             placeholder="Enter new email"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="form-input"
             autoFocus
           />
           <input
@@ -110,13 +110,13 @@ const ChangeEmailModal: React.FC<{ currentEmail: string; onClose: () => void; on
             value={confirmEmail}
             onChange={e => setConfirmEmail(e.target.value)}
             placeholder="Confirm new email"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="form-input"
           />
           {error && <div className="text-red-600 text-sm">{error}</div>}
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md"
+              className="btn-secondary"
               disabled={loading}
             >
               Cancel
@@ -124,7 +124,7 @@ const ChangeEmailModal: React.FC<{ currentEmail: string; onClose: () => void; on
             <button
               onClick={handleSave}
               disabled={loading || !canSave}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md flex items-center gap-2"
+              className="btn-primary disabled:bg-blue-400 flex items-center gap-2"
             >
               <Check className="w-4 h-4" />
               Save
@@ -161,8 +161,8 @@ const ChangePasswordModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
   const canSave = password && confirmPassword && password === confirmPassword && password.length >= 6;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full p-6">
+    <div className="modal-backdrop flex items-center justify-center p-4">
+      <div className="modal-content max-w-sm w-full p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Change Password</h2>
           <button
@@ -178,7 +178,7 @@ const ChangePasswordModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
             value={password}
             onChange={e => setPassword(e.target.value)}
             placeholder="Enter new password (min 6 chars)"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="form-input"
             autoFocus
           />
           <input
@@ -186,14 +186,14 @@ const ChangePasswordModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
             value={confirmPassword}
             onChange={e => setConfirmPassword(e.target.value)}
             placeholder="Confirm new password"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="form-input"
           />
           {error && <div className="text-red-600 text-sm">{error}</div>}
           {success && <div className="text-green-600 text-sm">Password updated successfully!</div>}
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md"
+              className="btn-secondary"
               disabled={loading}
             >
               Cancel
@@ -201,7 +201,7 @@ const ChangePasswordModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
             <button
               onClick={handleSave}
               disabled={loading || !canSave}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md flex items-center gap-2"
+              className="btn-primary disabled:bg-blue-400 flex items-center gap-2"
             >
               <Check className="w-4 h-4" />
               Save
@@ -309,9 +309,9 @@ function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm relative">
+    <div className="min-h-screen">
+      <div className="max-w-2xl mx-auto px-4 py-8 pt-[80px] md:pt-[60px]">
+        <div className="card p-6 relative">
           <button
             onClick={handleClose}
             className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
@@ -336,7 +336,7 @@ function Profile() {
             <div className="space-y-6 w-full">
               <div className="flex flex-col items-center">
                 <label className="relative group cursor-pointer">
-                  <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 mb-4 flex items-center justify-center relative shadow-md">
+                  <div className="w-32 h-32 avatar-placeholder mb-4 relative shadow-md overflow-hidden">
                     {avatarUrl ? (
                       <img
                         src={avatarUrl}
@@ -377,7 +377,7 @@ function Profile() {
 
               <div className="flex flex-col space-y-3 max-w-xs mx-auto w-full">
                 <button
-                  className="w-full inline-flex justify-center items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md transition-colors"
+                  className="w-full inline-flex justify-center items-center btn-secondary"
                   onClick={() => setShowChangeEmail(true)}
                 >
                   <Mail className="w-4 h-4 mr-2" />
@@ -385,7 +385,7 @@ function Profile() {
                 </button>
                 
                 <button
-                  className="w-full inline-flex justify-center items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md transition-colors"
+                  className="w-full inline-flex justify-center items-center btn-secondary"
                   onClick={() => setShowChangePassword(true)}
                 >
                   <Lock className="w-4 h-4 mr-2" />
@@ -394,7 +394,7 @@ function Profile() {
                 
                 <button
                   onClick={handleSignOut}
-                  className="w-full inline-flex justify-center items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
+                  className="w-full inline-flex justify-center items-center btn-danger"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Log Out

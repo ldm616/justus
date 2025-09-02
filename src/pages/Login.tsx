@@ -94,7 +94,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-start justify-center px-4 pt-12 md:pt-20 bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen flex items-start justify-center px-4 pt-[80px] md:pt-[60px]">
       <div className="max-w-sm w-full">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-2">
@@ -105,7 +105,7 @@ const Login: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="flex border-b border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setIsSignUp(false)}
@@ -142,7 +142,7 @@ const Login: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="form-input"
                   placeholder="Email"
                   required
                 />
@@ -172,7 +172,7 @@ const Login: React.FC = () => {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="form-input"
                     placeholder="Username (max 15 chars)"
                     maxLength={15}
                     required
@@ -183,7 +183,7 @@ const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading && <RefreshCw className="w-5 h-5 animate-spin" />}
                 {isSignUp ? 'Sign Up' : 'Log In'}
