@@ -1,178 +1,234 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import Footer from '../components/Footer';
+import Header from '../components/Header';
+
+interface Group {
+  id: string;
+  name: string;
+  role: string;
+}
 
 export default function Profile() {
-  const [display, setDisplay] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
-  const [msg, setMsg] = useState('');
-  const [elbowHurt, setElbowHurt] = useState<'left' | 'right' | 'both' | ''>('');
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [newPassword, setNewPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      setEmail(user.email || '');
-      const { data } = await supabase.from('profiles').select('display_name').eq('user_id', user.id).single();
-      if (data?.display_name) setDisplay(data.display_name);
-    })();
+    loadProfile();
+    loadGroups();
   }, []);
 
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
+  async function loadProfile() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setEmail(user.email || '');
+      const { data } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .single();
+      if (data) {
+        setDisplayName(data.display_name);
+      }
+    }
+  }
+
+  async function loadGroups() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { error } = await supabase.from('profiles').update({ display_name: display }).eq('user_id', user.id);
-    setMsg(error ? error.message : 'Profile updated successfully!');
-    setTimeout(() => setMsg(''), 3000);
+
+    const { data } = await supabase
+      .from('memberships')
+      .select('group_id, role, groups(id, name)')
+      .eq('user_id', user.id);
+
+    const groupList = data?.map(m => ({
+      id: m.groups.id,
+      name: m.groups.name,
+      role: m.role
+    })) || [];
+
+    setGroups(groupList);
   }
 
-  async function handleLogout() {
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+    setError('');
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ display_name: displayName })
+      .eq('user_id', user.id);
+
+    setLoading(false);
+    if (error) {
+      setError(error.message);
+    } else {
+      setMessage('Profile updated successfully');
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    setLoading(true);
+    setMessage('');
+    setError('');
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    setLoading(false);
+    if (error) {
+      setError(error.message);
+    } else {
+      setMessage('Password changed successfully');
+      setNewPassword('');
+    }
+  };
+
+  const handleLeaveGroup = async (groupId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('memberships')
+      .delete()
+      .eq('group_id', groupId)
+      .eq('user_id', user.id);
+
+    if (!error) {
+      loadGroups();
+    }
+  };
+
+  const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/login');
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Gelbow</h1>
-            </div>
-            <nav className="flex gap-6">
-              <button onClick={() => navigate('/')} className="text-gray-600 hover:text-gray-900">Home</button>
-              <button className="text-gray-600 hover:text-gray-900">Check-in</button>
-              <button className="text-gray-600 hover:text-gray-900">Rehab</button>
-              <button className="text-gray-600 hover:text-gray-900">Recovery</button>
-              <button className="text-gray-600 hover:text-gray-900">Activity</button>
-            </nav>
-          </div>
-        </div>
-      </div>
+    <>
+      <Header />
+      <div className="max-w-2xl mx-auto mt-8 px-4 space-y-8">
+        <h1 className="text-2xl font-bold">Profile</h1>
 
-      {/* Profile Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-          <h2 className="text-2xl font-bold mb-8">Profile</h2>
-
-          {/* Avatar Section */}
-          <div className="flex items-center gap-6 mb-8">
-            <div className="relative">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-3xl font-bold">
-                {display.charAt(0).toUpperCase() || email.charAt(0).toUpperCase()}
-              </div>
-              <button className="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </button>
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold">{display || 'User'}</h3>
-              <p className="text-gray-500">{email}</p>
-            </div>
+        {/* Profile Form */}
+        <form onSubmit={handleUpdateProfile} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Display Name
+            </label>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
 
-          <form onSubmit={save} className="space-y-6">
-            {/* Username Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
-              <input
-                type="text"
-                value={display}
-                onChange={e=>setDisplay(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Malcolm"
-                maxLength={20}
-              />
-              <p className="text-xs text-gray-500 mt-1">Max 20 characters. Letters, numbers, dashes, and underscores.</p>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              disabled
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+            />
+          </div>
 
-            {/* Email Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-              <input
-                type="email"
-                value={email}
-                disabled
-                className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500"
-              />
-            </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            Update Profile
+          </button>
+        </form>
 
-            {/* Which Elbow Hurts */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Which elbow hurts?</label>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setElbowHurt('left')}
-                  className={`px-6 py-2 rounded-lg border transition-colors ${
-                    elbowHurt === 'left' 
-                      ? 'bg-blue-50 border-blue-500 text-blue-700' 
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  Left Elbow
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setElbowHurt('right')}
-                  className={`px-6 py-2 rounded-lg border transition-colors ${
-                    elbowHurt === 'right' 
-                      ? 'bg-blue-50 border-blue-500 text-blue-700' 
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  Right Elbow
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setElbowHurt('both')}
-                  className={`px-6 py-2 rounded-lg border transition-colors ${
-                    elbowHurt === 'both' 
-                      ? 'bg-blue-50 border-blue-500 text-blue-700' 
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  Both
-                </button>
-              </div>
-            </div>
-
-            {msg && (
-              <div className="p-3 rounded-lg bg-green-50 text-green-700 text-sm">
-                {msg}
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
-              <button
-                type="submit"
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-              >
-                Save Changes
-              </button>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Log Out →
-              </button>
-            </div>
-          </form>
+        {/* Change Password */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Change Password</h2>
+          <div className="flex gap-2">
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="New password"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={handleChangePassword}
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              Change
+            </button>
+          </div>
         </div>
+
+        {/* Groups */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Your Groups</h2>
+          {groups.length === 0 ? (
+            <p className="text-gray-500">You're not in any groups yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {groups.map(group => (
+                <div key={group.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div>
+                    <span className="font-medium">{group.name}</span>
+                    <span className="ml-2 text-sm text-gray-500">({group.role})</span>
+                  </div>
+                  <button
+                    onClick={() => handleLeaveGroup(group.id)}
+                    className="text-red-600 hover:text-red-700 text-sm"
+                  >
+                    Leave
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Messages */}
+        {message && (
+          <div className="p-3 bg-green-50 text-green-700 rounded-lg">
+            {message}
+          </div>
+        )}
+        {error && (
+          <div className="p-3 bg-red-50 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          className="w-full py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+        >
+          Log out
+        </button>
       </div>
-      
-      <Footer />
-    </div>
+    </>
   );
 }
