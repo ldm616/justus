@@ -24,7 +24,7 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
 
   const fetchPhotos = async () => {
     try {
-      // Fetch photos with optional user profile information
+      // Fetch photos with user profile information
       const { data, error } = await supabase
         .from('photos')
         .select(`
