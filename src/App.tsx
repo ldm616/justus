@@ -14,21 +14,34 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     console.log('AuthGuard: Checking session...');
+    
+    // Add timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      console.log('AuthGuard: Session check timed out, assuming no session');
+      setLoading(false);
+    }, 3000);
+    
     // Check current session
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      clearTimeout(timeout);
       console.log('AuthGuard: Session check complete', { session: !!session, error });
       if (error) {
         console.error('AuthGuard: Session error:', error);
       }
       if (session) {
         console.log('AuthGuard: User authenticated, ensuring profile...');
-        await ensureProfile();
+        try {
+          await ensureProfile();
+        } catch (err) {
+          console.error('AuthGuard: Error ensuring profile:', err);
+        }
         setUser(session.user);
       } else {
         console.log('AuthGuard: No session found');
       }
       setLoading(false);
     }).catch(err => {
+      clearTimeout(timeout);
       console.error('AuthGuard: Failed to get session:', err);
       setLoading(false);
     });
@@ -43,7 +56,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   if (loading) {

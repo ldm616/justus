@@ -11,5 +11,18 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});
 console.log('Supabase client created successfully');
+
+// Test connection
+supabase.auth.getSession().then(({ data, error }) => {
+  console.log('Supabase connection test:', { hasSession: !!data.session, error });
+}).catch(err => {
+  console.error('Supabase connection test failed:', err);
+});
