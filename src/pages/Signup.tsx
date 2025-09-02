@@ -9,14 +9,16 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setMessage('');
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -26,12 +28,23 @@ export default function Signup() {
       }
     });
 
+    setLoading(false);
+
     if (error) {
       setError(error.message);
-      setLoading(false);
-    } else {
+    } else if (data?.user?.identities?.length === 0) {
+      // User already exists
+      setError('An account with this email already exists. Please sign in.');
+    } else if (data?.user && !data.session) {
+      // Email confirmation required
+      setMessage('Please check your email for a confirmation link to complete signup.');
+    } else if (data?.session) {
+      // Auto-confirmed, signed in immediately
       await ensureProfile();
       navigate('/');
+    } else {
+      // Signup successful but needs email confirmation
+      setMessage('Signup successful! Please check your email to confirm your account.');
     }
   };
 
@@ -94,6 +107,12 @@ export default function Signup() {
           {error && (
             <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
               {error}
+            </div>
+          )}
+
+          {message && (
+            <div className="p-3 bg-green-50 text-green-700 rounded-lg text-sm">
+              {message}
             </div>
           )}
 
