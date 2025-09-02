@@ -9,6 +9,11 @@ export default function Home() {
   const [hasUploadedToday, setHasUploadedToday] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('Profile in Home:', profile);
+  }, [profile]);
+
   useEffect(() => {
     if (profile) {
       checkTodayUpload();
