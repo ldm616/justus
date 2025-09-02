@@ -9,6 +9,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [resetPasswordSent, setResetPasswordSent] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -48,6 +50,30 @@ export default function Login() {
       setError(error.message);
     } else {
       setMagicLinkSent(true);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setResetPasswordSent(false);
+
+    const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${siteUrl}/login`
+    });
+
+    setLoading(false);
+    if (error) {
+      setError(error.message);
+    } else {
+      setResetPasswordSent(true);
+      setShowResetPassword(false);
     }
   };
 
@@ -103,6 +129,12 @@ export default function Login() {
             </div>
           )}
 
+          {resetPasswordSent && (
+            <div className="p-3 bg-green-50 text-green-700 rounded-lg text-sm">
+              Check your email for password reset instructions!
+            </div>
+          )}
+
           <div className="space-y-3">
             <button
               type="submit"
@@ -123,13 +155,37 @@ export default function Login() {
           </div>
         </form>
 
-        <div className="text-center">
-          <span className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link to="/signup" className="font-medium text-blue-600 hover:text-blue-500">
-              Sign up
-            </Link>
-          </span>
+        <div className="text-center space-y-3">
+          <div>
+            <button
+              onClick={() => setShowResetPassword(!showResetPassword)}
+              className="text-sm text-blue-600 hover:text-blue-500"
+            >
+              Forgot password?
+            </button>
+          </div>
+
+          {showResetPassword && (
+            <div className="p-4 bg-gray-50 rounded-lg space-y-3">
+              <p className="text-sm text-gray-600">Enter your email to reset your password</p>
+              <button
+                onClick={handleResetPassword}
+                disabled={loading || !email}
+                className="w-full py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Send Reset Email
+              </button>
+            </div>
+          )}
+
+          <div>
+            <span className="text-sm text-gray-600">
+              Don't have an account?{' '}
+              <Link to="/signup" className="font-medium text-blue-600 hover:text-blue-500">
+                Sign up
+              </Link>
+            </span>
+          </div>
         </div>
       </div>
     </div>
