@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { ensureProfile } from '../lib/auth';
+import DeploymentFooter from '../components/DeploymentFooter';
 
 export default function Signup() {
   const [name, setName] = useState('');
@@ -153,6 +154,7 @@ export default function Signup() {
           </span>
         </div>
       </div>
+      <DeploymentFooter />
     </div>
   );
 }

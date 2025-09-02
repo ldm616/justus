@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import DeploymentFooter from '../components/DeploymentFooter';
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('');
@@ -162,6 +163,7 @@ export default function ResetPassword() {
           </button>
         </form>
       </div>
+      <DeploymentFooter />
     </div>
   );
 }
