@@ -4,6 +4,7 @@ import { supabase } from './lib/supabaseClient';
 import { ensureProfile } from './lib/auth';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
 import CreateGroup from './pages/CreateGroup';
@@ -86,6 +87,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={
           <AuthGuard>
             <Home />

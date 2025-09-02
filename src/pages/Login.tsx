@@ -37,11 +37,10 @@ export default function Login() {
     setError('');
     setMagicLinkSent(false);
 
-    const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${siteUrl}/login`
+        emailRedirectTo: `${window.location.origin}/`
       }
     });
 
@@ -63,9 +62,8 @@ export default function Login() {
     setError('');
     setResetPasswordSent(false);
 
-    const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteUrl}/login`
+      redirectTo: `${window.location.origin}/reset-password`
     });
 
     setLoading(false);
