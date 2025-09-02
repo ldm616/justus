@@ -51,6 +51,7 @@ export default function Signup() {
               <input
                 id="name"
                 type="text"
+                autoComplete="name"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -65,6 +66,7 @@ export default function Signup() {
               <input
                 id="email"
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -79,6 +81,7 @@ export default function Signup() {
               <input
                 id="password"
                 type="password"
+                autoComplete="new-password"
                 required
                 minLength={6}
                 value={password}
