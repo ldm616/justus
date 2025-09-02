@@ -1,25 +1,55 @@
+import { useState, useEffect } from 'react';
 import { useUser } from '../contexts/UserContext';
+import { supabase } from '../lib/supabaseClient';
+import PhotoGrid from '../components/PhotoGrid';
+import FloatingUploadButton from '../components/FloatingUploadButton';
 
 export default function Home() {
   const { profile } = useUser();
+  const [hasUploadedToday, setHasUploadedToday] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useEffect(() => {
+    if (profile) {
+      checkTodayUpload();
+    }
+  }, [profile]);
+
+  const checkTodayUpload = async () => {
+    if (!profile) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('photos')
+        .select('id')
+        .eq('user_id', profile.id)
+        .eq('upload_date', new Date().toISOString().split('T')[0])
+        .single();
+
+      setHasUploadedToday(!!data && !error);
+    } catch (err) {
+      console.error('Error checking today upload:', err);
+    }
+  };
+
+  const handlePhotoUploaded = () => {
+    setHasUploadedToday(true);
+    setRefreshTrigger(prev => prev + 1); // Trigger grid refresh
+  };
 
   return (
-    <div className="min-h-screen pt-[60px] md:pt-12 pb-12">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="card p-8">
-          <h1 className="text-3xl font-bold mb-4">
-            Home
-          </h1>
-          {profile ? (
-            <p className="text-muted">
-              Welcome back, {profile.username || 'User'}!
-            </p>
-          ) : (
-            <p className="text-muted">
-              Welcome to JustUs. Please sign in to continue.
-            </p>
-          )}
-        </div>
+    <div className="min-h-screen pt-[60px] md:pt-12 pb-16">
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <h1 className="text-2xl font-bold mb-6">Daily Photos</h1>
+        
+        <PhotoGrid refreshTrigger={refreshTrigger} />
+        
+        {profile && (
+          <FloatingUploadButton 
+            onPhotoUploaded={handlePhotoUploaded}
+            hasUploadedToday={hasUploadedToday}
+          />
+        )}
       </div>
     </div>
   );

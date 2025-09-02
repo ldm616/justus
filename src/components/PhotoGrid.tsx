@@ -1,180 +1,183 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { useUser } from '../contexts/UserContext';
 
 interface Photo {
   id: string;
-  square_400_path: string;
-  mobile_path: string;
-  caption: string | null;
-  display_name: string;
-  group_name: string;
+  user_id: string;
+  photo_url: string;
+  thumbnail_url: string;
   created_at: string;
+  upload_date: string;
+  username?: string | null;
+  avatar_url?: string | null;
 }
 
-export default function PhotoGrid() {
+interface PhotoGridProps {
+  refreshTrigger?: number;
+}
+
+export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
   const [photos, setPhotos] = useState<Photo[]>([]);
-  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
-  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [loading, setLoading] = useState(true);
+  const { profile } = useUser();
 
-  useEffect(() => {
-    fetchPhotos();
-  }, []);
-
-  async function fetchPhotos() {
+  const fetchPhotos = async () => {
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      // Get user's groups
-      const { data: memberships } = await supabase
-        .from('memberships')
-        .select('group_id')
-        .eq('user_id', user.id);
-
-      if (!memberships || memberships.length === 0) {
-        setPhotos([]);
-        setLoading(false);
-        return;
-      }
-
-      const groupIds = memberships.map(m => m.group_id);
-
-      // Get photos from user's groups with user and group info
+      // Fetch photos with user profile information
       const { data, error } = await supabase
         .from('photos')
         .select(`
           id,
-          square_400_path,
-          mobile_path,
-          caption,
+          user_id,
+          photo_url,
+          thumbnail_url,
           created_at,
-          profiles:user_id (display_name),
-          groups:group_id (name)
+          upload_date,
+          profiles!photos_user_id_fkey (
+            username,
+            avatar_url
+          )
         `)
-        .in('group_id', groupIds)
         .order('created_at', { ascending: false })
-        .limit(120);
-      
+        .limit(50);
+
       if (error) throw error;
-      
-      // Transform the data to match our interface
-      const transformedPhotos = (data || []).map((photo: any) => ({
+
+      // Transform the data to flatten the profiles relationship
+      const typedPhotos = (data || []).map((photo: any) => ({
         id: photo.id,
-        square_400_path: photo.square_400_path,
-        mobile_path: photo.mobile_path,
-        caption: photo.caption,
-        display_name: photo.profiles?.display_name || 'Unknown',
-        group_name: photo.groups?.name || 'Unknown',
-        created_at: photo.created_at
+        user_id: photo.user_id,
+        photo_url: photo.photo_url,
+        thumbnail_url: photo.thumbnail_url,
+        created_at: photo.created_at,
+        upload_date: photo.upload_date,
+        username: photo.profiles?.username || null,
+        avatar_url: photo.profiles?.avatar_url || null
       }));
-      
-      setPhotos(transformedPhotos);
-      
-      // Sign URLs for grid thumbnails
-      const urls: Record<string, string> = {};
-      for (const photo of transformedPhotos) {
-        const { data: signedUrl } = await supabase.storage
-          .from('family-photos')
-          .createSignedUrl(photo.square_400_path, 3600);
-        if (signedUrl) {
-          urls[photo.square_400_path] = signedUrl.signedUrl;
-        }
-      }
-      setSignedUrls(urls);
-    } catch (error) {
-      console.error('Error fetching photos:', error);
+
+      setPhotos(typedPhotos);
+    } catch (err) {
+      console.error('Error fetching photos:', err);
     } finally {
       setLoading(false);
     }
-  }
-
-  const openLightbox = async (photo: Photo) => {
-    setSelectedPhoto(photo);
-    // Sign mobile URL for lightbox
-    const { data } = await supabase.storage
-      .from('family-photos')
-      .createSignedUrl(photo.mobile_path, 3600);
-    if (data) {
-      setSignedUrls(prev => ({ ...prev, [photo.mobile_path]: data.signedUrl }));
-    }
   };
 
-  const closeLightbox = () => {
-    setSelectedPhoto(null);
+  useEffect(() => {
+    fetchPhotos();
+  }, [refreshTrigger]);
+
+  useEffect(() => {
+    // Set up real-time subscription for new photos
+    const subscription = supabase
+      .channel('photos')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'photos' 
+        }, 
+        () => {
+          fetchPhotos(); // Refresh when photos change
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+      });
+    }
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+      </div>
+    );
+  }
+
+  if (photos.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500 dark:text-gray-400 mb-2">
+          No photos yet
+        </p>
+        {profile && (
+          <p className="text-sm text-gray-400 dark:text-gray-500">
+            Click the + button to upload your daily photo
+          </p>
+        )}
       </div>
     );
   }
 
   return (
-    <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
-        {photos.map((photo) => (
-          <div
-            key={photo.id}
-            className="aspect-square bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
-            onClick={() => openLightbox(photo)}
-          >
-            {signedUrls[photo.square_400_path] && (
-              <img
-                src={signedUrls[photo.square_400_path]}
-                alt=""
-                className="w-full h-full object-cover"
-              />
-            )}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-2">
-              <p className="text-white text-xs truncate">{photo.display_name} • {photo.group_name}</p>
+    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1 md:gap-2">
+      {photos.map((photo) => (
+        <div 
+          key={photo.id} 
+          className="relative group cursor-pointer"
+        >
+          <div className="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800 rounded-md">
+            <img
+              src={photo.thumbnail_url}
+              alt={`Photo by ${photo.username || 'User'}`}
+              className="w-full h-full object-cover transition-transform group-hover:scale-105"
+              loading="lazy"
+            />
+          </div>
+          
+          {/* Overlay with user info on hover */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
+            <div className="absolute bottom-0 left-0 right-0 p-2">
+              <div className="flex items-center gap-2">
+                {photo.avatar_url ? (
+                  <img 
+                    src={photo.avatar_url} 
+                    alt={photo.username || 'User'}
+                    className="w-6 h-6 rounded-full"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-gray-500 dark:bg-gray-600" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-xs font-medium truncate">
+                    {photo.username || 'Anonymous'}
+                  </p>
+                  <p className="text-white/80 text-xs">
+                    {formatDate(photo.upload_date)}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-        ))}
-      </div>
 
-      {photos.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No photos yet. Join a group and upload your first photo!</p>
-        </div>
-      )}
-
-      {/* Lightbox */}
-      {selectedPhoto && (
-        <div 
-          className="fixed inset-0 bg-black z-50 flex items-center justify-center"
-          onClick={closeLightbox}
-        >
-          <button
-            className="absolute top-4 right-4 text-white text-2xl"
-            onClick={closeLightbox}
-          >
-            ×
-          </button>
-          {signedUrls[selectedPhoto.mobile_path] && (
-            <img
-              src={signedUrls[selectedPhoto.mobile_path]}
-              alt=""
-              className="max-w-full max-h-full"
-              onClick={(e) => e.stopPropagation()}
-            />
+          {/* Highlight if it's the current user's photo */}
+          {profile && photo.user_id === profile.id && (
+            <div className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full ring-2 ring-white dark:ring-gray-900"></div>
           )}
-          <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-4">
-            <p className="text-white font-semibold">{selectedPhoto.display_name}</p>
-            {selectedPhoto.caption && (
-              <p className="text-white text-sm mt-1">{selectedPhoto.caption}</p>
-            )}
-            <p className="text-gray-300 text-xs mt-1">{selectedPhoto.group_name}</p>
-          </div>
         </div>
-      )}
-    </>
+      ))}
+    </div>
   );
 }
