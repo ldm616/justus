@@ -5,6 +5,7 @@ import { ensureProfile } from './lib/auth';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ResetPassword from './pages/ResetPassword';
+import TestConnection from './pages/TestConnection';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
 import CreateGroup from './pages/CreateGroup';
@@ -88,6 +89,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/test" element={<TestConnection />} />
         <Route path="/" element={
           <AuthGuard>
             <Home />
