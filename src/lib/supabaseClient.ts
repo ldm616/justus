@@ -48,17 +48,17 @@ const testInitialConnection = async () => {
     
     const sessionPromise = supabase.auth.getSession();
     
-    const result = await Promise.race([sessionPromise, timeoutPromise]);
+    const result = await Promise.race([sessionPromise, timeoutPromise]) as any;
     const elapsed = Date.now() - startTime;
     
-    if ('data' in result) {
+    if (result && 'data' in result) {
       const { data, error } = result;
       if (error) {
         console.error(`❌ Session check failed (${elapsed}ms):`, error.message);
       } else {
         console.log(`✅ Session check OK (${elapsed}ms)`, {
-          hasSession: !!data.session,
-          user: data.session?.user?.email
+          hasSession: !!(data as any)?.session,
+          user: (data as any)?.session?.user?.email
         });
       }
     }
@@ -85,7 +85,7 @@ export const testSupabaseConnection = async () => {
     });
     
     // Try a simple database query
-    const { data: dbData, error: dbError } = await supabase
+    const { error: dbError } = await supabase
       .from('profiles')
       .select('count')
       .limit(1)
