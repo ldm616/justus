@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase, testSupabaseConnection } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 import { ensureProfile } from '../lib/auth';
 import DeploymentFooter from '../components/DeploymentFooter';
 
@@ -13,100 +13,39 @@ export default function Login() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [resetPasswordSent, setResetPasswordSent] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<string>('');
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Test connection on mount
-    testSupabaseConnection().then(result => {
-      console.log('Connection test result:', result);
-      if (!result.authOk || !result.dbOk) {
-        setConnectionStatus('⚠️ Connection issues detected. Check console for details.');
-      }
-    });
-  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
-    setConnectionStatus('');
-    
+    setLoading(true);
+
+    if (!email || !password) {
+      setError('Please enter both email and password');
+      setLoading(false);
+      return;
+    }
+
     try {
-      console.log('Starting login attempt for:', email);
-      const startTime = Date.now();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       
-      // First, test if Supabase is reachable
-      const connectionTest = await testSupabaseConnection();
-      console.log('Pre-login connection test:', connectionTest);
-      
-      if (!connectionTest.authOk) {
-        setError('Cannot connect to authentication service. Please check your internet connection.');
-        setLoading(false);
+      if (signInError) {
+        if (signInError.message.includes('Invalid login credentials')) {
+          setError('Invalid email or password. Please try again.');
+        } else {
+          setError(signInError.message);
+        }
         return;
       }
       
-      // Attempt login with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-        console.log('Login timeout triggered');
-      }, 15000); // 15 second timeout
-      
-      console.log('Calling signInWithPassword...');
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      clearTimeout(timeoutId);
-      const elapsed = Date.now() - startTime;
-      console.log(`Login attempt completed in ${elapsed}ms`, { success: !error, error });
-
-      if (error) {
-        console.error('Login error details:', error);
-        
-        // Handle specific error cases
-        if (error.message.includes('Invalid login credentials')) {
-          setError('Invalid email or password. Please check your credentials and try again.');
-        } else if (error.message.includes('Email not confirmed')) {
-          setError('Please confirm your email address before signing in. Check your inbox for a confirmation link.');
-        } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-          setError('Network error. Please check your internet connection and try again.');
-        } else if (error.message.includes('timeout')) {
-          setError('Login request timed out. The server may be slow or unreachable.');
-        } else {
-          setError(error.message || 'An unknown error occurred');
-        }
-        setLoading(false);
-      } else if (data?.user) {
-        console.log('Login successful! User:', data.user.email);
-        console.log('Ensuring profile...');
-        
-        try {
-          await ensureProfile();
-          console.log('Profile ensured, navigating to home...');
-          navigate('/');
-        } catch (profileError: any) {
-          console.error('Profile setup error:', profileError);
-          setError(`Profile setup failed: ${profileError.message}`);
-          setLoading(false);
-        }
-      } else {
-        console.error('Login returned no user data');
-        setError('Login failed: No user data returned. Please try again.');
-        setLoading(false);
-      }
-    } catch (err: any) {
-      console.error('Unexpected login error:', err);
-      
-      if (err.name === 'AbortError') {
-        setError('Login request timed out. Please try again.');
-      } else if (err.message.includes('NetworkError') || err.message.includes('Failed to fetch')) {
-        setError('Network error. Please check your internet connection.');
-      } else {
-        setError(`Unexpected error: ${err.message || 'Unknown error'}`);
-      }
+      await ensureProfile();
+      navigate('/');
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
       setLoading(false);
     }
   };
@@ -211,12 +150,6 @@ export default function Login() {
               </div>
             </div>
           </div>
-
-          {connectionStatus && (
-            <div className="p-3 bg-yellow-50 text-yellow-700 rounded-lg text-sm">
-              {connectionStatus}
-            </div>
-          )}
 
           {error && (
             <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">

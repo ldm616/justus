@@ -13,7 +13,11 @@
       "Bash(git push:*)",
       "Bash(npm run build:*)",
       "Bash(npm uninstall:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/pages/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/lib/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/contexts/**)"
     ],
     "deny": [],
     "ask": []
