@@ -5,10 +5,8 @@ import { ensureProfile } from './lib/auth';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ResetPassword from './pages/ResetPassword';
-import TestConnection from './pages/TestConnection';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
-import CreateGroup from './pages/CreateGroup';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
@@ -61,7 +59,6 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/test" element={<TestConnection />} />
         <Route path="/" element={
           <AuthGuard>
             <Home />
@@ -70,11 +67,6 @@ export default function App() {
         <Route path="/profile" element={
           <AuthGuard>
             <Profile />
-          </AuthGuard>
-        } />
-        <Route path="/groups/new" element={
-          <AuthGuard>
-            <CreateGroup />
           </AuthGuard>
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
