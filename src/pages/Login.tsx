@@ -19,26 +19,60 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setError('');
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
+    
+    // Create a timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Login timeout')), 10000); // 10 second timeout
     });
+    
+    try {
+      console.log('Attempting login for:', email);
+      
+      // Race between login and timeout
+      const loginPromise = supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      const { data, error } = await Promise.race([
+        loginPromise,
+        timeoutPromise
+      ]).then(result => result as any).catch(err => {
+        if (err.message === 'Login timeout') {
+          return { data: null, error: { message: 'Login request timed out. Please try again.' } };
+        }
+        throw err;
+      });
 
-    if (error) {
-      // Provide more specific error messages
-      if (error.message.includes('Invalid login credentials')) {
-        setError('Invalid email or password. Please check your credentials and try again.');
-      } else if (error.message.includes('Email not confirmed')) {
-        setError('Please confirm your email address before signing in. Check your inbox for a confirmation link.');
+      if (error) {
+        console.error('Login error:', error);
+        // Provide more specific error messages
+        if (error.message.includes('Invalid login credentials')) {
+          setError('Invalid email or password. Please check your credentials and try again.');
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('Please confirm your email address before signing in. Check your inbox for a confirmation link.');
+        } else {
+          setError(error.message);
+        }
+        setLoading(false);
+      } else if (data?.user) {
+        console.log('Login successful, ensuring profile...');
+        try {
+          await ensureProfile();
+          console.log('Profile ensured, navigating to home...');
+          navigate('/');
+        } catch (profileError) {
+          console.error('Error ensuring profile:', profileError);
+          setError('Error setting up your profile. Please try again.');
+          setLoading(false);
+        }
       } else {
-        setError(error.message);
+        console.error('No user data returned');
+        setError('An unexpected error occurred. Please try again.');
+        setLoading(false);
       }
-      setLoading(false);
-    } else if (data?.user) {
-      await ensureProfile();
-      navigate('/');
-    } else {
+    } catch (err) {
+      console.error('Unexpected error during login:', err);
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
