@@ -1,118 +1,444 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Camera, LogOut, X, Pencil, Check, Mail, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { useUser } from '../contexts/UserContext';
 
-export default function Profile() {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
+interface EditUsernameModalProps {
+  currentUsername: string;
+  onSave: (newUsername: string) => void;
+  onClose: () => void;
+}
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  const loadProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
-    setEmail(user.email || '');
-
-    // Load profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('display_name')
-      .eq('user_id', user.id)
-      .single();
-
-    if (profile) {
-      setDisplayName(profile.display_name || '');
-    }
-  };
-
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage('');
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { error } = await supabase
-      .from('profiles')
-      .upsert({
-        user_id: user.id,
-        display_name: displayName
-      });
-
-    if (error) {
-      setMessage('Error updating profile');
-    } else {
-      setMessage('Profile updated successfully!');
-    }
-    setLoading(false);
-  };
-
+const EditUsernameModal: React.FC<EditUsernameModalProps> = ({ currentUsername, onSave, onClose }) => {
+  const [username, setUsername] = useState(currentUsername || '');
+  
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="bg-white shadow rounded-lg p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">Profile</h1>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Edit Username</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Enter username"
+            maxLength={15}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            autoFocus
+          />
           
-          <form onSubmit={handleUpdateProfile} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <input
-                type="email"
-                value={email}
-                disabled
-                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Display Name</label>
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter your display name"
-              />
-            </div>
-
-            {message && (
-              <div className={`p-3 rounded-md text-sm ${
-                message.includes('Error') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
-              }`}>
-                {message}
-              </div>
-            )}
-
-            <div className="flex space-x-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-              >
-                {loading ? 'Saving...' : 'Save Changes'}
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => navigate('/')}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-              >
-                Back to Home
-              </button>
-            </div>
-          </form>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => onSave(username.trim())}
+              disabled={!username.trim()}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md flex items-center gap-2"
+            >
+              <Check className="w-4 h-4" />
+              Save
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
+};
+
+const ChangeEmailModal: React.FC<{ currentEmail: string; onClose: () => void; onSuccess: () => void }> = ({ currentEmail, onClose, onSuccess }) => {
+  const [email, setEmail] = useState('');
+  const [confirmEmail, setConfirmEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { error } = await supabase.auth.updateUser({ email });
+      if (error) throw error;
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Failed to update email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const canSave = email && confirmEmail && email === confirmEmail && email !== currentEmail;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Change Email</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="space-y-4">
+          <div className="text-sm text-gray-500 dark:text-gray-400">Current: {currentEmail}</div>
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="Enter new email"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            autoFocus
+          />
+          <input
+            type="email"
+            value={confirmEmail}
+            onChange={e => setConfirmEmail(e.target.value)}
+            placeholder="Confirm new email"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+          {error && <div className="text-red-600 text-sm">{error}</div>}
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={loading || !canSave}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md flex items-center gap-2"
+            >
+              <Check className="w-4 h-4" />
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ChangePasswordModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const handleSave = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      setSuccess(true);
+      setTimeout(() => onClose(), 2000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update password');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const canSave = password && confirmPassword && password === confirmPassword && password.length >= 6;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Change Password</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="space-y-4">
+          <input
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder="Enter new password (min 6 chars)"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            autoFocus
+          />
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            placeholder="Confirm new password"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+          {error && <div className="text-red-600 text-sm">{error}</div>}
+          {success && <div className="text-green-600 text-sm">Password updated successfully!</div>}
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={loading || !canSave}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md flex items-center gap-2"
+            >
+              <Check className="w-4 h-4" />
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+function Profile() {
+  const [loading, setLoading] = useState(true);
+  const [username, setUsername] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [showEditUsername, setShowEditUsername] = useState(false);
+  const [showChangeEmail, setShowChangeEmail] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentEmail, setCurrentEmail] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { profile, updateProfile } = useUser();
+
+  const handleClose = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login');
+        return;
+      }
+
+      setCurrentEmail(session.user.email || '');
+
+      if (profile) {
+        setUsername(profile.username || '');
+        setAvatarUrl(profile.avatarUrl);
+      }
+      setLoading(false);
+    };
+
+    loadProfile();
+  }, [navigate, profile]);
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setError(null);
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image size must be less than 2MB');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setError('File must be an image');
+      return;
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session');
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${session.user.id}-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { cacheControl: '31536000', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      await updateProfile({
+        avatarUrl: publicUrl
+      });
+
+      setAvatarUrl(publicUrl);
+      setSuccessMessage('Avatar updated successfully!');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error) {
+      console.error('Error updating avatar:', error);
+      setError('Failed to update avatar. Please try again.');
+    }
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm relative">
+          <button
+            onClick={handleClose}
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          
+          <div className="flex flex-col items-center">
+            {error && (
+              <div className="mb-4 p-3 rounded bg-red-50 dark:bg-red-900/50 text-red-600 dark:text-red-400 w-full">
+                {error}
+              </div>
+            )}
+            
+            {successMessage && (
+              <div className="mb-4 p-3 rounded bg-green-50 dark:bg-green-900/50 text-green-600 dark:text-green-400 w-full">
+                {successMessage}
+              </div>
+            )}
+
+            <div className="space-y-6 w-full">
+              <div className="flex flex-col items-center">
+                <label className="relative group cursor-pointer">
+                  <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 mb-4 flex items-center justify-center relative shadow-md">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt={username || 'User'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Camera className="w-12 h-12 text-gray-400" />
+                    )}
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                      <Camera className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                  />
+                </label>
+
+                <div className="flex items-center gap-2 mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    {username || 'Set Username'}
+                  </h2>
+                  <button
+                    onClick={() => setShowEditUsername(true)}
+                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+                  >
+                    <Pencil className="w-4 h-4 text-gray-500" />
+                  </button>
+                </div>
+
+                <div className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                  {currentEmail}
+                </div>
+              </div>
+
+              <div className="flex flex-col space-y-3 max-w-xs mx-auto w-full">
+                <button
+                  className="w-full inline-flex justify-center items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md transition-colors"
+                  onClick={() => setShowChangeEmail(true)}
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Change Email
+                </button>
+                
+                <button
+                  className="w-full inline-flex justify-center items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md transition-colors"
+                  onClick={() => setShowChangePassword(true)}
+                >
+                  <Lock className="w-4 h-4 mr-2" />
+                  Change Password
+                </button>
+                
+                <button
+                  onClick={handleSignOut}
+                  className="w-full inline-flex justify-center items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Log Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {showEditUsername && (
+        <EditUsernameModal
+          currentUsername={username}
+          onSave={async (newUsername) => {
+            try {
+              await updateProfile({ username: newUsername });
+              setUsername(newUsername);
+              setSuccessMessage('Username updated successfully!');
+              setTimeout(() => setSuccessMessage(null), 3000);
+            } catch (err) {
+              setError('Failed to update username');
+            }
+            setShowEditUsername(false);
+          }}
+          onClose={() => setShowEditUsername(false)}
+        />
+      )}
+
+      {showChangeEmail && (
+        <ChangeEmailModal 
+          currentEmail={currentEmail} 
+          onClose={() => setShowChangeEmail(false)} 
+          onSuccess={() => {
+            setSuccessMessage('Email update request sent! Check your inbox.');
+            setTimeout(() => setSuccessMessage(null), 5000);
+          }}
+        />
+      )}
+      
+      {showChangePassword && (
+        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
+      )}
+    </div>
+  );
 }
+
+export default Profile;

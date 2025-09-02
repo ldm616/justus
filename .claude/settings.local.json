@@ -17,7 +17,21 @@
       "Read(/Users/malcolmlewis/Documents/Repos/2doozy/**)",
       "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/pages/**)",
       "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/lib/**)",
-      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/contexts/**)"
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/contexts/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/elbowhero/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/elbowhero/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/elbowhero/**)",
+      "Bash(supabase status:*)",
+      "Bash(supabase init:*)",
+      "Bash(supabase start:*)",
+      "Bash(supabase link:*)",
+      "Bash(supabase db:*)",
+      "Bash(psql:*)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/supabase/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/components/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/components/**)"
     ],
     "deny": [],
     "ask": []

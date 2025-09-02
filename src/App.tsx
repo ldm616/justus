@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
-import { ensureProfile } from './lib/auth';
+import { UserProvider } from './contexts/UserContext';
+import Header from './components/Header';
 import Login from './pages/Login';
-import Signup from './pages/Signup';
 import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
@@ -15,21 +15,13 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Check current session immediately
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        await ensureProfile();
-        setUser(session.user);
-      }
+      setUser(session?.user ?? null);
       setLoading(false);
     });
 
     // Listen for auth changes
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        await ensureProfile();
-        setUser(session.user);
-      } else {
-        setUser(null);
-      }
+      setUser(session?.user ?? null);
     });
 
     return () => {
@@ -46,7 +38,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return <Login />;
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
@@ -55,22 +47,24 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/" element={
-          <AuthGuard>
-            <Home />
-          </AuthGuard>
-        } />
-        <Route path="/profile" element={
-          <AuthGuard>
-            <Profile />
-          </AuthGuard>
-        } />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <UserProvider>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+          <Header />
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/" element={
+              <Home />
+            } />
+            <Route path="/profile" element={
+              <AuthGuard>
+                <Profile />
+              </AuthGuard>
+            } />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+      </UserProvider>
     </BrowserRouter>
   );
 }
