@@ -22,7 +22,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link to="/" className="font-semibold text-lg">justus.today</Link>
+        <Link to="/" className="font-semibold text-lg">JustUs</Link>
         
         <nav className="flex items-center gap-6">
           {user ? (

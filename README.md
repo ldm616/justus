@@ -1,4 +1,4 @@
-# justus.today - One Photo Per Day
+# JustUs - One Photo Per Day
 
 Instagram-style photo sharing app with groups and a unique constraint: one photo per user per group per day.
 
