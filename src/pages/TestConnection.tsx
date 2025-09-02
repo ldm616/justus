@@ -12,7 +12,7 @@ export default function TestConnection() {
     try {
       // Test 1: Basic connection
       const startTime = Date.now();
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('profiles')
         .select('count')
         .limit(1);
