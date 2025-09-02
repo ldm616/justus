@@ -23,7 +23,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     });
 
     // Listen for auth changes
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
         await ensureProfile();
         setUser(session.user);

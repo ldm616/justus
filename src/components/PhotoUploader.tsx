@@ -32,7 +32,7 @@ export default function PhotoUploader({ onUploadComplete }: PhotoUploaderProps) 
       .select('group_id, groups(id, name)')
       .eq('user_id', user.id);
 
-    const groupList = data?.map(m => ({
+    const groupList = data?.map((m: any) => ({
       id: m.groups.id,
       name: m.groups.name
     })) || [];

@@ -48,7 +48,7 @@ export default function Profile() {
       .select('group_id, role, groups(id, name)')
       .eq('user_id', user.id);
 
-    const groupList = data?.map(m => ({
+    const groupList = data?.map((m: any) => ({
       id: m.groups.id,
       name: m.groups.name,
       role: m.role
