@@ -23,15 +23,62 @@ export default function PhotoGrid() {
 
   async function fetchPhotos() {
     try {
-      const { data, error } = await supabase.rpc('v_feed_photos').limit(120);
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      // Get user's groups
+      const { data: memberships } = await supabase
+        .from('memberships')
+        .select('group_id')
+        .eq('user_id', user.id);
+
+      if (!memberships || memberships.length === 0) {
+        setPhotos([]);
+        setLoading(false);
+        return;
+      }
+
+      const groupIds = memberships.map(m => m.group_id);
+
+      // Get photos from user's groups with user and group info
+      const { data, error } = await supabase
+        .from('photos')
+        .select(`
+          id,
+          square_400_path,
+          mobile_path,
+          caption,
+          created_at,
+          profiles:user_id (display_name),
+          groups:group_id (name)
+        `)
+        .in('group_id', groupIds)
+        .order('created_at', { ascending: false })
+        .limit(120);
       
       if (error) throw error;
       
-      setPhotos(data || []);
+      // Transform the data to match our interface
+      const transformedPhotos = (data || []).map((photo: any) => ({
+        id: photo.id,
+        square_400_path: photo.square_400_path,
+        mobile_path: photo.mobile_path,
+        caption: photo.caption,
+        display_name: photo.profiles?.display_name || 'Unknown',
+        group_name: photo.groups?.name || 'Unknown',
+        created_at: photo.created_at
+      }));
+      
+      setPhotos(transformedPhotos);
       
       // Sign URLs for grid thumbnails
       const urls: Record<string, string> = {};
-      for (const photo of data || []) {
+      for (const photo of transformedPhotos) {
         const { data: signedUrl } = await supabase.storage
           .from('family-photos')
           .createSignedUrl(photo.square_400_path, 3600);
