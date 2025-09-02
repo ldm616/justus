@@ -12,7 +12,7 @@ export default function ResetPassword() {
 
   useEffect(() => {
     // Check if we have a recovery session
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    supabase.auth.onAuthStateChange(async (event, _session) => {
       if (event === 'PASSWORD_RECOVERY') {
         // User clicked the reset link and is ready to reset password
         console.log('Password recovery mode');
