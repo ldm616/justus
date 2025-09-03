@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, RefreshCw, Send, Edit2, Trash2, Tag } from 'lucide-react';
+import { X, RefreshCw, Send, Edit2, Trash2, Tag, MessageCircle, Type } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../contexts/UserContext';
 import { formatTimeAgo } from '../utils/timeFormat';
@@ -60,6 +60,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
   const [submittingComment, setSubmittingComment] = useState(false);
   const [editingCaption, setEditingCaption] = useState(false);
   const [captionText, setCaptionText] = useState(photo.caption || '');
+  const [activeSection, setActiveSection] = useState<'caption' | 'comments' | 'tags' | null>('comments');
   const { profile } = useUser();
   const { showToast } = useToast();
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
@@ -264,166 +265,222 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
   };
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
-      <div className="w-full h-full overflow-y-auto flex items-center justify-center">
-        <div className="relative max-w-4xl w-full">
-          {/* Image Section with controls */}
-          <div className="relative bg-black">
-            {/* Close button - inside image container */}
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 text-white hover:text-gray-300 z-10 bg-black/50 rounded-full p-2"
-            >
-              <X className="w-6 h-6" />
-            </button>
+    <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
+      <div className="w-full md:w-[650px] max-h-[90vh] overflow-y-auto">
+        {/* Close button - fixed position */}
+        <button
+          onClick={onClose}
+          className="fixed top-4 right-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-2"
+        >
+          <X className="w-6 h-6" />
+        </button>
 
-            {/* Replace button - inside image container */}
-            {profile && photo.user_id === profile.id && isToday && onReplace && (
+        {/* Image Section - fixed 650x650 on desktop, full width on mobile */}
+        <div className="relative bg-black w-full md:w-[650px] md:h-[650px]">
+          <img
+            src={photo.medium_url || photo.photo_url}
+            alt={`Photo by ${photo.username || 'User'}`}
+            className="w-full h-full object-contain"
+            onLoad={() => setImageLoaded(true)}
+          />
+        </div>
+
+        {/* Action Bar - directly below image */}
+        {imageLoaded && (
+          <div className="bg-gray-900 border-t border-gray-800">
+            <div className="flex justify-around py-3">
+              {/* Caption Button */}
               <button
-                onClick={onReplace}
-                className="absolute bottom-4 right-4 bg-white/10 backdrop-blur hover:bg-white/20 text-white p-3 rounded-full transition-all z-10"
-                aria-label="Replace photo"
-                disabled={uploading}
+                onClick={() => setActiveSection(activeSection === 'caption' ? null : 'caption')}
+                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+                  activeSection === 'caption' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'
+                }`}
               >
-                <RefreshCw className={`w-6 h-6 ${uploading ? 'animate-spin' : ''}`} />
+                <Type className="w-5 h-5" />
+                <span className="text-xs">Caption</span>
               </button>
-            )}
 
-            <img
-              src={photo.medium_url || photo.photo_url}
-              alt={`Photo by ${photo.username || 'User'}`}
-              className="w-full object-contain max-h-[70vh]"
-              onLoad={() => setImageLoaded(true)}
-            />
+              {/* Comments Button */}
+              <button
+                onClick={() => setActiveSection(activeSection === 'comments' ? null : 'comments')}
+                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+                  activeSection === 'comments' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="text-xs">Comments</span>
+              </button>
+
+              {/* Tags Button */}
+              <button
+                onClick={() => setActiveSection(activeSection === 'tags' ? null : 'tags')}
+                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+                  activeSection === 'tags' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <Tag className="w-5 h-5" />
+                <span className="text-xs">Tags</span>
+              </button>
+
+              {/* Replace Button - only show for today's photo by owner */}
+              {profile && photo.user_id === profile.id && isToday && onReplace && (
+                <button
+                  onClick={onReplace}
+                  disabled={uploading}
+                  className="flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-gray-400 hover:text-white transition-colors"
+                >
+                  <RefreshCw className={`w-5 h-5 ${uploading ? 'animate-spin' : ''}`} />
+                  <span className="text-xs">Replace</span>
+                </button>
+              )}
+            </div>
           </div>
+        )}
 
-          {/* Content Section */}
-          {imageLoaded && (
-            <div className="bg-gray-900">
-              {/* Photo Info Header */}
-              <div className="px-4 py-4 border-b border-gray-800">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {photo.avatar_url ? (
-                      <img 
-                        src={photo.avatar_url} 
-                        alt={photo.username || 'User'}
-                        className="w-10 h-10 rounded-full"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gray-700" />
-                    )}
+        {/* Content Section - shows based on activeSection */}
+        {imageLoaded && activeSection && (
+          <div className="bg-gray-900 w-full md:w-[650px]">
+            {/* Photo Info Header */}
+            <div className="px-4 py-4 border-b border-gray-800">
+              <div className="flex items-center gap-3">
+                {photo.avatar_url ? (
+                  <img 
+                    src={photo.avatar_url} 
+                    alt={photo.username || 'User'}
+                    className="w-10 h-10 rounded-full"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-700" />
+                )}
+                <div>
+                  <p className="font-medium">{photo.username || 'Anonymous'}</p>
+                  <p className="text-xs text-gray-400">{formatTimeAgo(photo.created_at)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Dynamic Content Based on Active Section */}
+            <div className="p-4">
+              {/* Caption Section */}
+              {activeSection === 'caption' && (
+                <div>
+                  {editingCaption ? (
                     <div>
-                      <p className="font-medium">{photo.username || 'Anonymous'}</p>
-                      <p className="text-xs text-gray-400">{formatTimeAgo(photo.created_at)}</p>
+                      <textarea
+                        value={captionText}
+                        onChange={(e) => setCaptionText(e.target.value)}
+                        className="w-full bg-gray-800 rounded px-3 py-2 text-sm resize-none"
+                        rows={3}
+                        placeholder="Add a caption..."
+                        autoFocus
+                      />
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={handleUpdateCaption}
+                          className="text-xs bg-blue-600 px-3 py-1 rounded hover:bg-blue-700"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingCaption(false);
+                            setCaptionText(photo.caption || '');
+                          }}
+                          className="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  
-                  {profile?.id === photo.user_id && (
-                    <button
-                      onClick={() => setShowTagInput(true)}
-                      className="p-2 hover:bg-gray-800 rounded-full"
-                    >
-                      <Tag className="w-5 h-5" />
-                    </button>
+                  ) : (
+                    <div>
+                      {photo.caption ? (
+                        <div className="flex items-start gap-2">
+                          <p className="text-sm flex-1">{photo.caption}</p>
+                          {profile?.id === photo.user_id && (
+                            <button
+                              onClick={() => setEditingCaption(true)}
+                              className="p-1 hover:bg-gray-800 rounded"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      ) : profile?.id === photo.user_id ? (
+                        <button
+                          onClick={() => setEditingCaption(true)}
+                          className="text-gray-400 hover:text-white text-sm"
+                        >
+                          Add a caption...
+                        </button>
+                      ) : (
+                        <p className="text-gray-400 text-sm">No caption</p>
+                      )}
+                    </div>
                   )}
                 </div>
+              )}
 
-                {/* Caption */}
-                {(photo.caption || profile?.id === photo.user_id) && (
-                  <div className="mt-3">
-                    {editingCaption ? (
-                      <div>
-                        <textarea
-                          value={captionText}
-                          onChange={(e) => setCaptionText(e.target.value)}
-                          className="w-full bg-gray-800 rounded px-3 py-2 text-sm resize-none"
-                          rows={2}
-                          placeholder="Add a caption..."
-                          autoFocus
-                        />
-                        <div className="flex gap-2 mt-2">
+              {/* Tags Section */}
+              {activeSection === 'tags' && (
+                <div>
+                  {profile?.id === photo.user_id && (
+                    <div className="mb-3">
+                      {showTagInput ? (
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={newTag}
+                            onChange={(e) => setNewTag(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddTag();
+                              } else if (e.key === 'Escape') {
+                                setShowTagInput(false);
+                                setNewTag('');
+                              }
+                            }}
+                            placeholder="Add tag (e.g. #vacation)"
+                            className="flex-1 bg-gray-800 rounded px-3 py-2 text-sm"
+                            autoFocus
+                          />
                           <button
-                            onClick={handleUpdateCaption}
+                            onClick={handleAddTag}
                             className="text-xs bg-blue-600 px-3 py-1 rounded hover:bg-blue-700"
                           >
-                            Save
+                            Add
                           </button>
                           <button
                             onClick={() => {
-                              setEditingCaption(false);
-                              setCaptionText(photo.caption || '');
+                              setShowTagInput(false);
+                              setNewTag('');
                             }}
                             className="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600"
                           >
                             Cancel
                           </button>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-start gap-2">
-                        <p className="text-sm flex-1">{photo.caption}</p>
-                        {profile?.id === photo.user_id && (
-                          <button
-                            onClick={() => setEditingCaption(true)}
-                            className="p-2 hover:bg-gray-800 rounded-full"
-                          >
-                            <Edit2 className="w-5 h-5" />
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Tags Display and Input */}
-                <div className="mt-3">
-                  {showTagInput && profile?.id === photo.user_id && (
-                    <div className="flex gap-2 mb-2">
-                      <input
-                        type="text"
-                        value={newTag}
-                        onChange={(e) => setNewTag(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddTag();
-                          } else if (e.key === 'Escape') {
-                            setShowTagInput(false);
-                            setNewTag('');
-                          }
-                        }}
-                        placeholder="Add tag (e.g. #vacation)"
-                        className="flex-1 bg-gray-800 rounded px-2 py-1 text-sm"
-                        autoFocus
-                      />
-                      <button
-                        onClick={handleAddTag}
-                        className="text-xs bg-blue-600 px-3 py-1 rounded hover:bg-blue-700"
-                      >
-                        Add
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowTagInput(false);
-                          setNewTag('');
-                        }}
-                        className="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600"
-                      >
-                        Cancel
-                      </button>
+                      ) : (
+                        <button
+                          onClick={() => setShowTagInput(true)}
+                          className="text-gray-400 hover:text-white text-sm"
+                        >
+                          + Add tag
+                        </button>
+                      )}
                     </div>
                   )}
                   
-                  {tags.length > 0 && (
+                  {tags.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {tags.map(tag => (
-                        <span key={tag.id} className="inline-flex items-center text-xs bg-gray-800 px-2 py-1 rounded group">
+                        <span key={tag.id} className="inline-flex items-center text-sm bg-gray-800 px-3 py-1 rounded-full group">
                           <span>{tag.tag}</span>
                           {profile?.id === photo.user_id && (
                             <button
                               onClick={() => handleRemoveTag(tag.id)}
-                              className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <X className="w-3 h-3" />
                             </button>
@@ -431,24 +488,27 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                         </span>
                       ))}
                     </div>
+                  ) : (
+                    <p className="text-gray-400 text-sm">No tags</p>
                   )}
                 </div>
-              </div>
+              )}
 
               {/* Comments Section */}
-              <div className="px-4 py-4">
-                <h3 className="text-sm font-medium text-gray-400 mb-4">Comments</h3>
-                
-                {loadingComments ? (
-                  <div className="text-center py-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto" />
-                  </div>
-                ) : comments.length === 0 ? (
-                  <p className="text-gray-400 text-center py-8">No comments yet</p>
-                ) : (
-                  <div className="space-y-4">
-                    {comments.map(comment => (
-                      <div key={comment.id} className="flex gap-3">
+              {activeSection === 'comments' && (
+                <div>
+                  {loadingComments ? (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-4 mb-4 max-h-[300px] overflow-y-auto">
+                        {comments.length === 0 ? (
+                          <p className="text-gray-400 text-center py-8">No comments yet</p>
+                        ) : (
+                          comments.map(comment => (
+                            <div key={comment.id} className="flex gap-3">
                     {comment.profiles?.avatar_url ? (
                       <img 
                         src={comment.profiles.avatar_url}
@@ -520,42 +580,45 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                       ) : (
                         <p className="text-sm mt-1">{comment.comment}</p>
                       )}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    
+                    {/* Add Comment */}
+                    <div className="pt-3 border-t border-gray-800">
+                      <div className="flex gap-2">
+                        <textarea
+                          ref={commentInputRef}
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleAddComment();
+                            }
+                          }}
+                          placeholder="Add a comment..."
+                          className="flex-1 bg-gray-800 rounded-lg px-3 py-2 resize-none text-sm"
+                          rows={2}
+                        />
+                        <button
+                          onClick={handleAddComment}
+                          disabled={!newComment.trim() || submittingComment}
+                          className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Send className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                  ))}
-                  </div>
+                  </>
                 )}
-                
-                {/* Add Comment */}
-                <div className="mt-6 pt-4 border-t border-gray-800">
-                  <div className="flex gap-2">
-                    <textarea
-                      ref={commentInputRef}
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleAddComment();
-                        }
-                      }}
-                      placeholder="Add a comment..."
-                      className="flex-1 bg-gray-800 rounded-lg px-3 py-2 resize-none text-sm"
-                      rows={1}
-                    />
-                    <button
-                      onClick={handleAddComment}
-                      disabled={!newComment.trim() || submittingComment}
-                      className="p-2 bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Send className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+      )}
       </div>
     </div>
   );
