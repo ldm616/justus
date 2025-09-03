@@ -24,11 +24,18 @@ export default function Home() {
     if (!profile) return;
 
     try {
+      // Get today's date in local timezone as YYYY-MM-DD
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayString = `${year}-${month}-${day}`;
+      
       const { data, error } = await supabase
         .from('photos')
         .select('id')
         .eq('user_id', profile.id)
-        .eq('upload_date', new Date().toISOString().split('T')[0])
+        .eq('upload_date', todayString)
         .single();
 
       setHasUploadedToday(!!data && !error);

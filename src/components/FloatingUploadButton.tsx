@@ -166,6 +166,13 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
       // Save or update photo record in database
       if (hasUploadedToday) {
         // Update existing photo
+        // Get today's date in local timezone as YYYY-MM-DD
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayString = `${year}-${month}-${day}`;
+        
         const { error: updateError } = await supabase
           .from('photos')
           .update({
@@ -175,11 +182,18 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
             created_at: new Date().toISOString()
           })
           .eq('user_id', profile.id)
-          .eq('upload_date', new Date().toISOString().split('T')[0]);
+          .eq('upload_date', todayString);
 
         if (updateError) throw updateError;
       } else {
         // Insert new photo
+        // Get today's date in local timezone as YYYY-MM-DD
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayString = `${year}-${month}-${day}`;
+        
         const { error: insertError } = await supabase
           .from('photos')
           .insert({
@@ -187,7 +201,7 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
             photo_url: fullUrl,
             medium_url: mediumUrl,
             thumbnail_url: thumbUrl,
-            upload_date: new Date().toISOString().split('T')[0]
+            upload_date: todayString
           });
 
         if (insertError) throw insertError;
