@@ -3,37 +3,62 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
-const Login: React.FC = () => {
-  const [email, setEmail] = useState(() => localStorage.getItem('rememberedEmail') || '');
+const Signup: React.FC = () => {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [rememberEmail, setRememberEmail] = useState(true);
   const navigate = useNavigate();
+
+  const createProfile = async (userId: string, username: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .insert([{ 
+          id: userId,
+          username,
+          avatar_url: null
+        }]);
+      
+      if (error) throw error;
+    } catch (err) {
+      console.error('Error creating profile:', err);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      setLoading(false);
+      return;
+    }
+
+    if (username.length < 2) {
+      setError('Username must be at least 2 characters');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
       });
 
-      if (signInError) throw signInError;
+      if (signUpError) throw signUpError;
 
-      if (rememberEmail) {
-        localStorage.setItem('rememberedEmail', email.trim());
-      } else {
-        localStorage.removeItem('rememberedEmail');
+      if (data.user) {
+        await createProfile(data.user.id, username.trim());
+        navigate('/');
       }
-
-      navigate('/');
     } catch (err: any) {
-      setError(err.message || 'Failed to log in');
+      setError(err.message || 'Failed to sign up');
     } finally {
       setLoading(false);
     }
@@ -43,7 +68,7 @@ const Login: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white">Log In</h1>
+          <h1 className="text-3xl font-bold text-white">Sign Up</h1>
         </div>
 
         <div className="card p-6">
@@ -71,6 +96,21 @@ const Login: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
+                Username
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="form-input"
+                placeholder="Choose a username"
+                maxLength={15}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Password
               </label>
               <div className="relative">
@@ -90,19 +130,9 @@ const Login: React.FC = () => {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-            </div>
-
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="remember"
-                checked={rememberEmail}
-                onChange={(e) => setRememberEmail(e.target.checked)}
-                className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-              />
-              <label htmlFor="remember" className="ml-2 text-sm text-gray-300">
-                Remember email
-              </label>
+              <p className="text-xs text-gray-400 mt-1">
+                Must be at least 6 characters
+              </p>
             </div>
 
             <button
@@ -110,17 +140,14 @@ const Login: React.FC = () => {
               disabled={loading}
               className="btn-primary w-full"
             >
-              {loading ? 'Logging in...' : 'Log in'}
+              {loading ? 'Creating account...' : 'Sign up'}
             </button>
 
-            <div className="text-center space-y-2 pt-4">
-              <Link to="/reset-password" className="text-sm text-gray-400 hover:text-gray-300">
-                Forgot password?
-              </Link>
+            <div className="text-center pt-4">
               <div className="text-sm text-gray-400">
-                Don't have an account?{' '}
-                <Link to="/signup" className="text-blue-500 hover:text-blue-400">
-                  Sign up
+                Already have an account?{' '}
+                <Link to="/login" className="text-blue-500 hover:text-blue-400">
+                  Log in
                 </Link>
               </div>
             </div>
@@ -131,4 +158,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login;
+export default Signup;

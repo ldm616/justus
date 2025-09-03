@@ -82,7 +82,7 @@ export default function Home() {
               Log in
             </Link>
             <Link 
-              to="/login?signup=true"
+              to="/signup"
               className="btn-primary px-8 py-3 text-lg"
             >
               Sign up
