@@ -13,8 +13,9 @@ export default function AppIcon({ size = 24, className = "" }: AppIconProps) {
         className="text-white fill-white"
       />
       <Camera 
-        size={size * 0.5} 
+        size={size * 0.35} 
         className="absolute text-black"
+        style={{ transform: 'translateY(-5%)' }}
       />
     </div>
   );
