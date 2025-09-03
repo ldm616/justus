@@ -10,7 +10,7 @@ export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const isHomePage = location.pathname === '/';
-  const isAuthPage = location.pathname === '/login';
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/join' || location.pathname === '/reset-password';
   const isProfilePage = location.pathname === '/profile';
 
   React.useEffect(() => {
@@ -59,7 +59,7 @@ export default function Header() {
         )}
 
         <div className="flex items-center space-x-4">
-          {isLoggedIn ? (
+          {isLoggedIn && !isAuthPage ? (
             <Link to="/profile" className="flex items-center space-x-2 text-white">
               <div className="relative w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                 {profile?.avatarUrl ? (
@@ -73,7 +73,7 @@ export default function Header() {
                 )}
               </div>
             </Link>
-          ) : !isAuthPage ? (
+          ) : !isAuthPage && !isLoggedIn ? (
             <Link 
               to="/login"
               className="text-white flex items-center"
