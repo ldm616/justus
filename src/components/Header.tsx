@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { User, ArrowLeft, LogIn, Home } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../contexts/UserContext';
-import AppIcon from './AppIcon';
 
 export default function Header() {
   const [currentUser, setCurrentUser] = React.useState<any>(null);
@@ -43,9 +42,8 @@ export default function Header() {
         {isHomePage ? (
           <Link 
             to="/"
-            className="text-white font-semibold text-[26px] md:text-[22px] flex items-center gap-2"
+            className="text-white font-semibold text-[26px] md:text-[22px]"
           >
-            <AppIcon size={28} />
             JustUs
           </Link>
         ) : isAuthPage ? (

@@ -4,7 +4,6 @@ import { useUser } from '../contexts/UserContext';
 import { supabase } from '../lib/supabaseClient';
 import PhotoGrid from '../components/PhotoGrid';
 import FloatingUploadButton from '../components/FloatingUploadButton';
-import AppIcon from '../components/AppIcon';
 
 export default function Home() {
   const { profile } = useUser();
@@ -73,10 +72,7 @@ export default function Home() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center px-4">
-          <div className="flex justify-center mb-6">
-            <AppIcon size={80} />
-          </div>
-          <h1 className="text-4xl font-bold text-white mb-3">JustUs</h1>
+          <h1 className="text-5xl font-bold text-white mb-3">JustUs</h1>
           <p className="text-xl text-gray-400 mb-8">Share one photo a day with your family</p>
           <div className="flex gap-4 justify-center">
             <Link 

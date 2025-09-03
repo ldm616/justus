@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../contexts/UserContext';
 import { usePhotoUpload } from '../hooks/usePhotoUpload';
 import { useToast } from '../contexts/ToastContext';
-import { X, RefreshCw } from 'lucide-react';
+import PhotoModal from './PhotoModal';
 
 interface Photo {
   id: string;
@@ -242,77 +242,16 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
 
       {/* Photo Modal */}
       {selectedPhoto && (
-        <div 
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-          onClick={() => {
+        <PhotoModal
+          photo={selectedPhoto}
+          onClose={() => {
             setSelectedPhoto(null);
             setImageLoaded(false);
           }}
-        >
-          {/* Image container with close button */}
-          <div className="relative" onClick={(e) => e.stopPropagation()}>
-            {/* Close button - only show after image loads */}
-            {imageLoaded && (
-              <button
-                onClick={() => {
-                  setSelectedPhoto(null);
-                  setImageLoaded(false);
-                }}
-                className="absolute -top-10 right-0 text-white hover:text-gray-300 z-10 md:top-2 md:right-2"
-              >
-                <X className="w-8 h-8" />
-              </button>
-            )}
-
-            {/* Replace button - only show after image loads and if it's the user's photo and today */}
-            {imageLoaded && profile && selectedPhoto.user_id === profile.id && isToday(selectedPhoto.upload_date) && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  fileInputRef.current?.click();
-                }}
-                className="absolute bottom-4 right-4 bg-white/10 backdrop-blur hover:bg-white/20 text-white p-3 rounded-full transition-all z-10"
-                aria-label="Replace photo"
-                disabled={uploading}
-              >
-                <RefreshCw className={`w-6 h-6 ${uploading ? 'animate-spin' : ''}`} />
-              </button>
-            )}
-
-            <img
-              src={selectedPhoto.medium_url || selectedPhoto.photo_url}
-              alt={`Photo by ${selectedPhoto.username || 'User'}`}
-              className="max-w-full max-h-[90vh] w-auto h-auto"
-              key={selectedPhoto.medium_url || selectedPhoto.photo_url}
-              onLoad={() => setImageLoaded(true)}
-            />
-            
-            {/* Photo info overlay - only show after image loads */}
-            {imageLoaded && (
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-              <div className="flex items-center gap-3">
-                {selectedPhoto.avatar_url ? (
-                  <img 
-                    src={selectedPhoto.avatar_url} 
-                    alt={selectedPhoto.username || 'User'}
-                    className="w-10 h-10 rounded-full"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-500" />
-                )}
-                <div>
-                  <p className="text-white font-medium">
-                    {selectedPhoto.username || 'Anonymous'}
-                  </p>
-                  <p className="text-white/80 text-sm">
-                    {formatDate(selectedPhoto.upload_date)}
-                  </p>
-                </div>
-              </div>
-              </div>
-            )}
-          </div>
-        </div>
+          onReplace={() => fileInputRef.current?.click()}
+          uploading={uploading}
+          isToday={isToday(selectedPhoto.upload_date)}
+        />
       )}
 
       {/* Hidden file input for replace functionality */}

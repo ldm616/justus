@@ -2,20 +2,6 @@
   <!-- Black background -->
   <rect x="0" y="0" width="32" height="32" fill="#000000"/>
   
-  <!-- Simplified camera with heart -->
-  <g transform="scale(0.14) translate(16, 16)">
-    <!-- Camera body -->
-    <rect x="40" y="60" width="120" height="120" rx="8" fill="#fff"/>
-    
-    <!-- Horizontal line -->
-    <line x1="40" y1="90" x2="160" y2="90" stroke="#000" stroke-width="4"/>
-    
-    <!-- Main lens -->
-    <circle cx="100" cy="135" r="32" fill="#fff" stroke="#000" stroke-width="4"/>
-    <circle cx="100" cy="135" r="24" fill="#000"/>
-    
-    <!-- Heart in lens -->
-    <path d="M100 130 C95 125, 87 125, 87 133 C87 141, 100 149, 100 149 C100 149, 113 141, 113 133 C113 125, 105 125, 100 130 Z" 
-          fill="#fff"/>
-  </g>
+  <!-- White letter J -->
+  <text x="16" y="24" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">J</text>
 </svg>
