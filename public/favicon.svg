@@ -2,14 +2,20 @@
   <!-- Black background -->
   <rect x="0" y="0" width="32" height="32" fill="#000000"/>
   
-  <!-- White heart -->
-  <path d="M16 27C16 27 5 19.5 5 12C5 8.5 7.5 6 11 6C13.5 6 15.5 7.5 16 10C16.5 7.5 18.5 6 21 6C24.5 6 27 8.5 27 12C27 19.5 16 27 16 27Z" 
-        fill="white"/>
-  
-  <!-- Black camera in center of heart (smaller and centered) -->
-  <g transform="translate(16, 13)">
-    <rect x="-3.5" y="-2" width="7" height="5" rx="0.7" fill="black"/>
-    <circle cx="0" cy="0.5" r="1.5" fill="black" stroke="white" stroke-width="0.2"/>
-    <rect x="-1.5" y="-3" width="3" height="1" rx="0.3" fill="black"/>
+  <!-- Simplified camera with heart -->
+  <g transform="scale(0.14) translate(16, 16)">
+    <!-- Camera body -->
+    <rect x="40" y="60" width="120" height="120" rx="8" fill="#fff"/>
+    
+    <!-- Horizontal line -->
+    <line x1="40" y1="90" x2="160" y2="90" stroke="#000" stroke-width="4"/>
+    
+    <!-- Main lens -->
+    <circle cx="100" cy="135" r="32" fill="#fff" stroke="#000" stroke-width="4"/>
+    <circle cx="100" cy="135" r="24" fill="#000"/>
+    
+    <!-- Heart in lens -->
+    <path d="M100 130 C95 125, 87 125, 87 133 C87 141, 100 149, 100 149 C100 149, 113 141, 113 133 C113 125, 105 125, 100 130 Z" 
+          fill="#fff"/>
   </g>
 </svg>

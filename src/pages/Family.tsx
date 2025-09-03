@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Mail, Plus, Trash2, X, Check, Edit2, Copy } from 'lucide-react';
+import { Users, Mail, Plus, Trash2, X, Check, Edit2, Copy, Ban, UserCheck } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../contexts/UserContext';
 import { useToast } from '../contexts/ToastContext';
@@ -10,6 +10,9 @@ interface FamilyMember {
   user_id: string;
   role: 'admin' | 'member';
   joined_at: string;
+  is_suspended?: boolean;
+  suspended_at?: string;
+  suspended_by?: string;
   profiles: {
     username: string;
     avatar_url: string | null;
@@ -333,6 +336,33 @@ export default function Family() {
     }
   };
 
+  const toggleSuspendMember = async (memberId: string, currentlySuspended: boolean) => {
+    const action = currentlySuspended ? 'unsuspend' : 'suspend';
+    if (!confirm(`Are you sure you want to ${action} this member?`)) return;
+
+    try {
+      const { error } = await supabase.rpc('suspend_family_member', {
+        p_member_id: memberId,
+        p_family_id: family?.id,
+        p_suspend: !currentlySuspended
+      });
+
+      if (error) throw error;
+
+      // Update local state
+      setMembers(members.map(m => 
+        m.user_id === memberId 
+          ? { ...m, is_suspended: !currentlySuspended }
+          : m
+      ));
+      
+      showToast(`Member ${currentlySuspended ? 'unsuspended' : 'suspended'}`);
+    } catch (err: any) {
+      console.error(`Error ${action}ing member:`, err);
+      showToast(err.message || `Failed to ${action} member`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -467,8 +497,13 @@ export default function Family() {
                     </div>
                   )}
                   <div>
-                    <p className="font-medium">
+                    <p className="font-medium flex items-center gap-2">
                       {member.profiles?.username || 'Unknown'}
+                      {member.is_suspended && (
+                        <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">
+                          Suspended
+                        </span>
+                      )}
                     </p>
                     <p className="text-sm text-gray-400">
                       {member.role === 'admin' ? 'Admin' : 'Member'}
@@ -477,12 +512,26 @@ export default function Family() {
                 </div>
 
                 {isAdmin && member.user_id !== profile?.id && (
-                  <button
-                    onClick={() => removeMember(member.user_id)}
-                    className="p-2 hover:bg-gray-700 rounded text-red-500"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => toggleSuspendMember(member.user_id, member.is_suspended || false)}
+                      className={`p-2 hover:bg-gray-700 rounded ${member.is_suspended ? 'text-green-500' : 'text-yellow-500'}`}
+                      title={member.is_suspended ? 'Unsuspend member' : 'Suspend member'}
+                    >
+                      {member.is_suspended ? (
+                        <UserCheck className="w-4 h-4" />
+                      ) : (
+                        <Ban className="w-4 h-4" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => removeMember(member.user_id)}
+                      className="p-2 hover:bg-gray-700 rounded text-red-500"
+                      title="Remove member"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
