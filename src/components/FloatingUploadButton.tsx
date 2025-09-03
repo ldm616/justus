@@ -171,30 +171,31 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
       console.log('Checking for existing photo with:', { user_id: profile.id, upload_date: dateString });
       const { data: existingPhoto, error: checkError } = await supabase
         .from('photos')
-        .select('id')
+        .select('id, photo_url, medium_url, thumbnail_url')
         .eq('user_id', profile.id)
         .eq('upload_date', dateString)
         .single();
       
       console.log('Existing photo check result:', { existingPhoto, checkError });
 
-      if (existingPhoto) {
-        // Get the old photo data to delete old files
-        const { data: oldPhoto } = await supabase
-          .from('photos')
-          .select('photo_url, medium_url, thumbnail_url')
-          .eq('id', existingPhoto.id)
-          .single();
+      if (existingPhoto && !checkError) {
+        // Store old URLs for deletion
+        const oldPhoto = {
+          photo_url: existingPhoto.photo_url,
+          medium_url: existingPhoto.medium_url,
+          thumbnail_url: existingPhoto.thumbnail_url
+        };
 
         // Update existing photo with new URLs
         console.log('Updating existing photo with ID:', existingPhoto.id);
+        console.log('Old URLs:', oldPhoto);
         console.log('New URLs:', {
           photo_url: fullUrl,
           medium_url: mediumUrl,
           thumbnail_url: thumbUrl
         });
         
-        const { data: updateData, error: updateError } = await supabase
+        const { data: updateData, error: updateError, count } = await supabase
           .from('photos')
           .update({
             photo_url: fullUrl,
@@ -205,11 +206,16 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
           .eq('id', existingPhoto.id)
           .select();
 
-        console.log('Update result:', { updateData, updateError });
+        console.log('Update result:', { updateData, updateError, count });
         
         if (updateError) {
           console.error('Update error:', updateError);
           throw updateError;
+        }
+        
+        if (!updateData || updateData.length === 0) {
+          console.error('Update did not affect any rows');
+          throw new Error('Failed to update photo record');
         }
 
         // Delete old files from storage
@@ -244,9 +250,9 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
             }
           }
         }
-      } else {
+      } else if (!existingPhoto) {
         // Insert new photo
-        console.log('Inserting new photo for date:', dateString);
+        console.log('No existing photo found, inserting new photo for date:', dateString);
         const { data: insertData, error: insertError } = await supabase
           .from('photos')
           .insert({

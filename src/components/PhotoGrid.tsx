@@ -66,6 +66,13 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
       }));
 
       console.log('PhotoGrid: Setting photos state with', typedPhotos.length, 'photos');
+      if (typedPhotos.length > 0) {
+        console.log('First photo URLs:', {
+          thumbnail: typedPhotos[0].thumbnail_url,
+          medium: typedPhotos[0].medium_url,
+          full: typedPhotos[0].photo_url
+        });
+      }
       setPhotos(typedPhotos);
     } catch (err) {
       console.error('Error fetching photos:', err);
