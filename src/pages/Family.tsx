@@ -94,11 +94,38 @@ export default function Family() {
         setMembers(membersData || []);
 
         // Check if current user is admin
-        const currentUserMember = membersData?.find(m => m.user_id === profile.id);
-        setIsAdmin(currentUserMember?.role === 'admin');
+        let currentUserMember = membersData?.find(m => m.user_id === profile.id);
+        
+        // If creator is not in members, add them as admin
+        if (!currentUserMember && familyData.created_by === profile.id) {
+          console.log('Creator not found in members, adding as admin...');
+          const { data: newMember, error: addError } = await supabase
+            .from('family_members')
+            .insert({
+              family_id: familyId,
+              user_id: profile.id,
+              role: 'admin'
+            })
+            .select(`
+              *,
+              profiles:user_id (
+                username,
+                avatar_url
+              )
+            `)
+            .single();
+            
+          if (!addError && newMember) {
+            membersData = [...(membersData || []), newMember];
+            setMembers(membersData);
+            currentUserMember = newMember;
+          }
+        }
+        
+        setIsAdmin(currentUserMember?.role === 'admin' || familyData.created_by === profile.id);
 
         // Load invitations if admin
-        if (currentUserMember?.role === 'admin') {
+        if (currentUserMember?.role === 'admin' || familyData.created_by === profile.id) {
           const { data: invitesData, error: invitesError } = await supabase
             .from('family_invitations')
             .select('*')
