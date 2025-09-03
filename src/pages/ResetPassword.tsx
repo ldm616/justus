@@ -63,7 +63,7 @@ export default function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="text-center text-3xl font-bold text-gray-900">Reset Password</h2>
+          <h2 className="text-center text-3xl font-bold text-gray-900">Reset password</h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Enter your new password below
           </p>
@@ -159,7 +159,7 @@ export default function ResetPassword() {
             disabled={loading || !password || !confirmPassword}
             className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Updating...' : 'Reset Password'}
+            {loading ? 'Updating...' : 'Reset password'}
           </button>
         </form>
       </div>

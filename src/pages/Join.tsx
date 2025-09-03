@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Users, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { Users, RefreshCw, Eye, EyeOff, Camera } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from '../contexts/ToastContext';
 
@@ -18,12 +18,13 @@ export default function Join() {
   const [invitation, setInvitation] = useState<InvitationDetails | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
-  const [isExistingUser, setIsExistingUser] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { showToast } = useToast();
   const token = searchParams.get('token');
@@ -31,6 +32,30 @@ export default function Join() {
   useEffect(() => {
     loadInvitation();
   }, [token]);
+
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('Image size must be less than 2MB');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      showToast('File must be an image');
+      return;
+    }
+
+    setAvatarFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setAvatarPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const loadInvitation = async () => {
     if (!token) {
@@ -85,15 +110,12 @@ export default function Join() {
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!invitation || !email || !password) return;
-
-    // For new users, check password confirmation
-    if (!isExistingUser && password !== confirmPassword) {
-      showToast('Passwords do not match');
+    if (!invitation || !email || !password || !username || !avatarFile) {
+      showToast('Please fill in all fields');
       return;
     }
 
-    if (!isExistingUser && password.length < 6) {
+    if (password.length < 6) {
       showToast('Password must be at least 6 characters');
       return;
     }
@@ -101,50 +123,50 @@ export default function Join() {
     setJoining(true);
     
     try {
-      let userId: string;
+      // Sign up the new user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-      if (isExistingUser) {
-        // User exists, try to sign in
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (signInError) {
-          showToast('Invalid credentials');
-          setJoining(false);
-          return;
-        }
-
-        userId = signInData.user.id;
-      } else {
-        // New user, sign them up
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-
-        if (signUpError?.message?.includes('already registered')) {
-          // User actually exists, switch to login mode
-          setIsExistingUser(true);
-          showToast('Account already exists. Please sign in.');
-          setJoining(false);
-          return;
-        } else if (signUpError) {
-          throw signUpError;
-        }
-
-        userId = signUpData.user!.id;
-
-        // Create profile for new user
-        await supabase
-          .from('profiles')
-          .insert({
-            id: userId,
-            username: username || email.split('@')[0].substring(0, 15),
-            family_id: invitation.family_id
-          });
+      if (signUpError?.message?.includes('already registered')) {
+        showToast('This email is already registered. Please use a different email or contact your family admin.');
+        setJoining(false);
+        return;
+      } else if (signUpError) {
+        throw signUpError;
       }
+
+      const userId = signUpData.user!.id;
+
+      // Upload avatar
+      let avatarUrl = null;
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${userId}-${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, avatarFile, { cacheControl: '31536000', upsert: true });
+
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+          avatarUrl = publicUrl;
+        }
+      }
+
+      // Create profile for new user
+      await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          username: username.trim(),
+          avatar_url: avatarUrl,
+          family_id: invitation.family_id
+        });
+      
 
       // Add user to family
       await supabase
@@ -205,40 +227,46 @@ export default function Join() {
             Join {invitation.families.name}
           </h1>
           <p className="text-gray-400">
-            You've been invited to share daily photos with your family
+            Create your account to start sharing daily photos
           </p>
         </div>
 
         <div className="card p-6">
-          <div className="flex border-b border-gray-700 mb-6">
-            <button
-              type="button"
-              onClick={() => setIsExistingUser(false)}
-              className={`flex-1 pb-3 text-sm font-medium transition-colors ${
-                !isExistingUser
-                  ? 'text-white border-b-2 border-white'
-                  : 'text-gray-500 hover:text-gray-300'
-              }`}
-            >
-              New to JustUs
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsExistingUser(true)}
-              className={`flex-1 pb-3 text-sm font-medium transition-colors ${
-                isExistingUser
-                  ? 'text-white border-b-2 border-white'
-                  : 'text-gray-500 hover:text-gray-300'
-              }`}
-            >
-              Already have account
-            </button>
-          </div>
-
           <form onSubmit={handleJoin} className="space-y-4">
+            {/* Profile Picture */}
+            <div className="flex justify-center">
+              <label className="relative group cursor-pointer">
+                <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden">
+                  {avatarPreview ? (
+                    <img
+                      src={avatarPreview}
+                      alt="Avatar preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Camera className="w-8 h-8 text-gray-400" />
+                  )}
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                    <Camera className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  required
+                />
+                <p className="text-xs text-gray-400 text-center mt-2">
+                  {avatarFile ? 'Click to change' : 'Add photo *'}
+                </p>
+              </label>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Email
+                Email *
               </label>
               <input
                 type="email"
@@ -250,26 +278,24 @@ export default function Join() {
               />
             </div>
 
-            {!isExistingUser && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="form-input"
-                  placeholder="Choose a username (max 15 chars)"
-                  maxLength={15}
-                  required
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Username *
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="form-input"
+                placeholder="Choose a username (max 15 chars)"
+                maxLength={15}
+                required
+              />
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Password
+                Password *
               </label>
               <div className="relative">
                 <input
@@ -277,7 +303,7 @@ export default function Join() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="form-input pr-10"
-                  placeholder={isExistingUser ? "Enter your password" : "Choose a password (min 6 chars)"}
+                  placeholder="Choose a password (min 6 chars)"
                   minLength={6}
                   required
                 />
@@ -291,30 +317,13 @@ export default function Join() {
               </div>
             </div>
 
-            {!isExistingUser && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="form-input"
-                  placeholder="Confirm your password"
-                  minLength={6}
-                  required
-                />
-              </div>
-            )}
-
             <button
               type="submit"
-              disabled={joining || !email || !password || (!isExistingUser && !username)}
+              disabled={joining || !email || !password || !username || !avatarFile}
               className="w-full btn-primary flex items-center justify-center gap-2"
             >
               {joining && <RefreshCw className="w-5 h-5 animate-spin" />}
-              {isExistingUser ? 'Sign In & Join Family' : 'Sign Up & Join Family'}
+              Join family
             </button>
           </form>
         </div>

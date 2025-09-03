@@ -341,7 +341,7 @@ export default function Family() {
           <div className="card p-6">
             <div className="flex items-center gap-3 mb-6">
               <Users className="w-8 h-8 text-white" />
-              <h1 className="text-2xl font-bold">Create Your Family</h1>
+              <h1 className="text-2xl font-bold">Create your family</h1>
             </div>
             
             <p className="text-gray-400 mb-6">
@@ -368,7 +368,7 @@ export default function Family() {
                 disabled={loading || !familyName.trim()}
                 className="w-full btn-primary"
               >
-                Create Family
+                Create family
               </button>
             </div>
           </div>
@@ -496,9 +496,9 @@ export default function Family() {
                       <p className="font-medium">{invite.email}</p>
                       <p className="text-sm text-gray-400 mt-1">
                         Status: {invite.accepted_at ? (
-                          <span className="text-green-500">Member Joined</span>
+                          <span className="text-green-500">Member joined</span>
                         ) : (
-                          <span className="text-yellow-500">Link Sent</span>
+                          <span className="text-yellow-500">Link sent</span>
                         )}
                       </p>
                     </div>
@@ -521,7 +521,7 @@ export default function Family() {
                         ) : (
                           <>
                             <Copy className="w-4 h-4" />
-                            Copy Link
+                            Copy link
                           </>
                         )}
                       </button>
@@ -539,7 +539,7 @@ export default function Family() {
         <div className="modal-backdrop flex items-center justify-center p-4">
           <div className="modal-content max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Invite Family Member</h2>
+              <h2 className="text-xl font-semibold">Invite family member</h2>
               <button
                 onClick={() => setShowInviteModal(false)}
                 className="text-gray-400 hover:text-gray-300"
@@ -581,7 +581,7 @@ export default function Family() {
                   disabled={!inviteEmail}
                   className="btn-primary"
                 >
-                  Create Invitation
+                  Create invitation
                 </button>
               </div>
             </div>

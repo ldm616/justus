@@ -38,7 +38,8 @@
       "Read(/Users/malcolmlewis/Documents/Repos/2doozy/**)",
       "Read(/Users/malcolmlewis/Documents/Repos/2doozy/**)",
       "Read(/Users/malcolmlewis/Documents/Repos/2doozy/**)",
-      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/supabase/functions/resizeImage/**)"
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/supabase/functions/resizeImage/**)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

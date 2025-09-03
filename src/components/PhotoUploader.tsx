@@ -188,7 +188,7 @@ export default function PhotoUploader({ onUploadComplete }: PhotoUploaderProps) 
           disabled={uploading}
           className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {uploading ? 'Uploading...' : 'Upload Photo'}
+          {uploading ? 'Uploading...' : 'Upload photo'}
         </button>
       )}
     </div>

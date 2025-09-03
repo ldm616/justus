@@ -17,7 +17,7 @@ const EditUsernameModal: React.FC<EditUsernameModalProps> = ({ currentUsername, 
     <div className="modal-backdrop flex items-center justify-center p-4">
       <div className="modal-content max-w-sm w-full p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">Edit Username</h2>
+          <h2 className="text-xl font-semibold">Edit username</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-300"
@@ -87,7 +87,7 @@ const ChangeEmailModal: React.FC<{ currentEmail: string; onClose: () => void; on
     <div className="modal-backdrop flex items-center justify-center p-4">
       <div className="modal-content max-w-sm w-full p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">Change Email</h2>
+          <h2 className="text-xl font-semibold">Change email</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-300"
@@ -164,7 +164,7 @@ const ChangePasswordModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
     <div className="modal-backdrop flex items-center justify-center p-4">
       <div className="modal-content max-w-sm w-full p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">Change Password</h2>
+          <h2 className="text-xl font-semibold">Change password</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-300"
@@ -381,7 +381,7 @@ function Profile() {
                   className="w-full inline-flex justify-center items-center btn-secondary"
                 >
                   <Users className="w-4 h-4 mr-2" />
-                  Manage Family
+                  Manage family
                 </Link>
 
                 <button
@@ -389,7 +389,7 @@ function Profile() {
                   onClick={() => setShowChangeEmail(true)}
                 >
                   <Mail className="w-4 h-4 mr-2" />
-                  Change Email
+                  Change email
                 </button>
                 
                 <button
@@ -397,7 +397,7 @@ function Profile() {
                   onClick={() => setShowChangePassword(true)}
                 >
                   <Lock className="w-4 h-4 mr-2" />
-                  Change Password
+                  Change password
                 </button>
                 
                 <button
@@ -405,7 +405,7 @@ function Profile() {
                   className="w-full inline-flex justify-center items-center btn-danger"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
-                  Log Out
+                  Log out
                 </button>
               </div>
             </div>
