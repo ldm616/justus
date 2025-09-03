@@ -42,7 +42,7 @@ export default function Family() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
-  const { profile } = useUser();
+  const { profile, updateProfile } = useUser();
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -56,13 +56,21 @@ export default function Family() {
     }
 
     try {
-      // Check if user has a family
-      if (profile.familyId) {
+      // First check the database for user's family via family_members or profiles
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('family_id')
+        .eq('id', profile.id)
+        .single();
+
+      const familyId = profileData?.family_id || profile.familyId;
+
+      if (familyId) {
         // Load family details
         const { data: familyData, error: familyError } = await supabase
           .from('families')
           .select('*')
-          .eq('id', profile.familyId)
+          .eq('id', familyId)
           .single();
 
         if (familyError) throw familyError;
@@ -80,7 +88,7 @@ export default function Family() {
               avatar_url
             )
           `)
-          .eq('family_id', profile.familyId);
+          .eq('family_id', familyId);
 
         if (membersError) throw membersError;
         setMembers(membersData || []);
@@ -94,12 +102,37 @@ export default function Family() {
           const { data: invitesData, error: invitesError } = await supabase
             .from('family_invitations')
             .select('*')
-            .eq('family_id', profile.familyId)
+            .eq('family_id', familyId)
             .eq('used', false)
             .order('created_at', { ascending: false });
 
           if (invitesError) throw invitesError;
           setInvitations(invitesData || []);
+        }
+
+        // Update profile context if it doesn't have familyId
+        if (!profile.familyId && familyId) {
+          await updateProfile({ familyId });
+        }
+      } else {
+        // Also check if user is already in a family via family_members
+        const { data: memberData } = await supabase
+          .from('family_members')
+          .select('family_id')
+          .eq('user_id', profile.id)
+          .single();
+
+        if (memberData?.family_id) {
+          // Update profile and reload
+          await supabase
+            .from('profiles')
+            .update({ family_id: memberData.family_id })
+            .eq('id', profile.id);
+          
+          await updateProfile({ familyId: memberData.family_id });
+          // Reload with the family_id
+          await loadFamilyData();
+          return;
         }
       }
     } catch (err) {
@@ -131,10 +164,15 @@ export default function Family() {
       if (familyError) throw familyError;
 
       // Update user's profile with family_id
-      await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ family_id: familyData.id })
         .eq('id', profile?.id);
+
+      if (updateError) throw updateError;
+
+      // Update the profile in context
+      await updateProfile({ familyId: familyData.id });
 
       setFamily(familyData);
       setIsAdmin(true);

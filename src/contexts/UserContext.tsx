@@ -101,11 +101,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', session.user.id)
         .maybeSingle();
 
-      const dbUpdates = {
-        username: updates.username,
-        avatar_url: updates.avatarUrl,
+      const dbUpdates: any = {
         updated_at: new Date().toISOString()
       };
+
+      // Only include fields that exist in the database
+      if (updates.username !== undefined) dbUpdates.username = updates.username;
+      if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl;
+      if (updates.familyId !== undefined) dbUpdates.family_id = updates.familyId;
+      if (updates.needsPasswordChange !== undefined) dbUpdates.needs_password_change = updates.needsPasswordChange;
 
       if (!existingProfile) {
         const { error: createError } = await supabase
