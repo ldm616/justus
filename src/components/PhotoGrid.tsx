@@ -208,48 +208,45 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
       {/* Photo Modal */}
       {selectedPhoto && (
         <div 
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
           onClick={() => setSelectedPhoto(null)}
         >
-          <div className="relative w-full h-full flex items-center justify-center p-[1%]">
-            {/* Close button */}
+          {/* Image container with close button */}
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            {/* Close button positioned relative to image */}
             <button
               onClick={() => setSelectedPhoto(null)}
-              className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+              className="absolute -top-10 right-0 text-white hover:text-gray-300 z-10 md:top-2 md:right-2"
             >
               <X className="w-8 h-8" />
             </button>
 
-            {/* Image container */}
-            <div className="relative max-w-[600px] w-full md:w-auto">
-              <img
-                src={selectedPhoto.medium_url || selectedPhoto.photo_url}
-                alt={`Photo by ${selectedPhoto.username || 'User'}`}
-                className="w-full h-auto max-h-[98vh] object-contain"
-                onClick={(e) => e.stopPropagation()}
-                key={selectedPhoto.medium_url || selectedPhoto.photo_url} // Force re-render
-              />
-              
-              {/* Photo info overlay */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                <div className="flex items-center gap-3">
-                  {selectedPhoto.avatar_url ? (
-                    <img 
-                      src={selectedPhoto.avatar_url} 
-                      alt={selectedPhoto.username || 'User'}
-                      className="w-10 h-10 rounded-full"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-gray-500" />
-                  )}
-                  <div>
-                    <p className="text-white font-medium">
-                      {selectedPhoto.username || 'Anonymous'}
-                    </p>
-                    <p className="text-white/80 text-sm">
-                      {formatDate(selectedPhoto.upload_date)}
-                    </p>
-                  </div>
+            <img
+              src={selectedPhoto.medium_url || selectedPhoto.photo_url}
+              alt={`Photo by ${selectedPhoto.username || 'User'}`}
+              className="max-w-full max-h-[90vh] w-auto h-auto"
+              key={selectedPhoto.medium_url || selectedPhoto.photo_url}
+            />
+            
+            {/* Photo info overlay */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+              <div className="flex items-center gap-3">
+                {selectedPhoto.avatar_url ? (
+                  <img 
+                    src={selectedPhoto.avatar_url} 
+                    alt={selectedPhoto.username || 'User'}
+                    className="w-10 h-10 rounded-full"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-500" />
+                )}
+                <div>
+                  <p className="text-white font-medium">
+                    {selectedPhoto.username || 'Anonymous'}
+                  </p>
+                  <p className="text-white/80 text-sm">
+                    {formatDate(selectedPhoto.upload_date)}
+                  </p>
                 </div>
               </div>
             </div>

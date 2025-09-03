@@ -258,9 +258,9 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
       <button
         onClick={() => setShowModal(true)}
         className="fixed bottom-16 right-4 md:bottom-20 md:right-8 w-14 h-14 bg-white hover:bg-gray-100 text-black rounded-full shadow-lg flex items-center justify-center z-50 transition-all hover:scale-110"
-        aria-label={hasUploadedToday ? "Update today's photo" : "Upload photo"}
+        aria-label={hasUploadedToday ? "Replace today's photo" : "Upload photo"}
       >
-        {hasUploadedToday ? <Upload className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
+        <Plus className="w-6 h-6" />
       </button>
 
       {/* Upload modal */}
