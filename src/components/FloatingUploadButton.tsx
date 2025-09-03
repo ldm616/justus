@@ -225,7 +225,7 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
           <div className="modal-content max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">
-                {hasUploadedToday ? "Update Today's Photo" : "Upload Today's Photo"}
+                {hasUploadedToday ? "Replace Today's Photo" : "Upload Today's Photo"}
               </h2>
               <button
                 onClick={() => {
@@ -234,14 +234,14 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
                   setPreviewUrl(null);
                   setError(null);
                 }}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                className="text-gray-400 hover:text-gray-300"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {error && (
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-md text-sm">
+              <div className="mb-4 p-3 bg-red-900/50 text-red-400 rounded-md text-sm">
                 {error}
               </div>
             )}
@@ -249,26 +249,26 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
             {!previewUrl ? (
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
+                className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-gray-500 transition-colors"
               >
                 <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-400">
                   Click to select a photo
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                <p className="text-xs text-gray-500 mt-2">
                   Maximum file size: 5MB
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-800">
                   <img
                     src={previewUrl}
                     alt="Preview"
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                <p className="text-sm text-gray-400 text-center">
                   Your photo will be cropped to a square
                 </p>
               </div>

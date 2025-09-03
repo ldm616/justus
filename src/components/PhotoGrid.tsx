@@ -95,14 +95,19 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
   }, []);
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Parse the upload_date which is in YYYY-MM-DD format
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed
+    
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    if (date.toDateString() === today.toDateString()) {
+    if (date.getTime() === today.getTime()) {
       return 'Today';
-    } else if (date.toDateString() === yesterday.toDateString()) {
+    } else if (date.getTime() === yesterday.getTime()) {
       return 'Yesterday';
     } else {
       return date.toLocaleDateString('en-US', { 
@@ -116,7 +121,7 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
       </div>
     );
   }
@@ -124,11 +129,11 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
   if (photos.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500 dark:text-gray-400 mb-2">
+        <p className="text-gray-400 mb-2">
           No photos yet
         </p>
         {profile && (
-          <p className="text-sm text-gray-400 dark:text-gray-500">
+          <p className="text-sm text-gray-500">
             Click the + button to upload your daily photo
           </p>
         )}
@@ -146,7 +151,7 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
             className="relative group cursor-pointer"
             onClick={() => setSelectedPhoto(photo)}
           >
-            <div className="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800">
+            <div className="aspect-square overflow-hidden bg-gray-900">
               <img
                 src={photo.thumbnail_url}
                 alt={`Photo by ${photo.username || 'User'}`}
@@ -166,7 +171,7 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
                       className="w-6 h-6 rounded-full"
                     />
                   ) : (
-                    <div className="w-6 h-6 rounded-full bg-gray-500 dark:bg-gray-600" />
+                    <div className="w-6 h-6 rounded-full bg-gray-700" />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-white text-xs font-medium truncate">
@@ -180,10 +185,6 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
               </div>
             </div>
 
-          {/* Highlight if it's the current user's photo */}
-          {profile && photo.user_id === profile.id && (
-            <div className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full ring-2 ring-white dark:ring-gray-900"></div>
-          )}
         </div>
       ))}
     </div>
