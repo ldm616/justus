@@ -264,48 +264,47 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
   };
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex items-center justify-center p-4 md:p-8">
-      <div className="flex flex-col md:flex-row w-full h-full max-w-7xl mx-auto gap-0 md:gap-4">
-        {/* Image Section */}
-        <div 
-          className="flex-1 flex items-center justify-center relative bg-black cursor-pointer min-h-0 md:rounded-l-lg"
-          onClick={onClose}
-        >
-          <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-            {imageLoaded && (
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 text-white hover:text-gray-300 z-10 bg-black/50 rounded-full p-2"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            )}
+    <div className="fixed inset-0 bg-black z-50 flex flex-col md:flex-row">
+      {/* Image Section - 60% width on desktop, full width on mobile */}
+      <div 
+        className="w-full md:w-[60%] h-[60vh] md:h-full flex items-start justify-center relative bg-black cursor-pointer overflow-hidden"
+        onClick={onClose}
+      >
+        <div className="relative w-full h-full flex items-start justify-center pt-8" onClick={(e) => e.stopPropagation()}>
+          {imageLoaded && (
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-10 bg-black/50 rounded-full p-2"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          )}
 
-            {imageLoaded && profile && photo.user_id === profile.id && isToday && onReplace && (
-              <button
-                onClick={onReplace}
-                className="absolute bottom-4 right-4 bg-white/10 backdrop-blur hover:bg-white/20 text-white p-3 rounded-full transition-all z-10"
-                aria-label="Replace photo"
-                disabled={uploading}
-              >
-                <RefreshCw className={`w-6 h-6 ${uploading ? 'animate-spin' : ''}`} />
-              </button>
-            )}
+          {imageLoaded && profile && photo.user_id === profile.id && isToday && onReplace && (
+            <button
+              onClick={onReplace}
+              className="absolute bottom-4 right-4 bg-white/10 backdrop-blur hover:bg-white/20 text-white p-3 rounded-full transition-all z-10"
+              aria-label="Replace photo"
+              disabled={uploading}
+            >
+              <RefreshCw className={`w-6 h-6 ${uploading ? 'animate-spin' : ''}`} />
+            </button>
+          )}
 
-            <img
-              src={photo.medium_url || photo.photo_url}
-              alt={`Photo by ${photo.username || 'User'}`}
-              className="max-w-full max-h-full object-contain"
-              onLoad={() => setImageLoaded(true)}
-            />
-          </div>
+          <img
+            src={photo.medium_url || photo.photo_url}
+            alt={`Photo by ${photo.username || 'User'}`}
+            className="max-w-full max-h-full object-contain"
+            onLoad={() => setImageLoaded(true)}
+          />
         </div>
+      </div>
 
-        {/* Comments Section */}
-        {imageLoaded && (
-          <div className="w-full md:w-96 bg-gray-900 flex flex-col h-full overflow-hidden md:rounded-r-lg">
+      {/* Comments Section - 40% width on desktop, full width on mobile */}
+      {imageLoaded && (
+        <div className="w-full md:w-[40%] h-[40vh] md:h-full bg-gray-900 flex flex-col overflow-hidden">
             {/* Photo Info Header */}
-            <div className="p-4 border-b border-gray-800">
+            <div className="px-2.5 py-4 border-b border-gray-800">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {photo.avatar_url ? (
@@ -372,7 +371,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
             </div>
 
             {/* Comments List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto px-2.5 py-4 space-y-4">
               {loadingComments ? (
                 <div className="text-center py-4">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto" />
@@ -460,7 +459,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
             </div>
 
             {/* Add Comment */}
-            <div className="p-4 border-t border-gray-800">
+            <div className="px-2.5 py-4 border-t border-gray-800">
               <div className="flex gap-2">
                 <textarea
                   ref={commentInputRef}
