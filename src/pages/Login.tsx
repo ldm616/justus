@@ -40,8 +40,8 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
+    <div className="min-h-screen px-4 pt-[50px]">
+      <div className="max-w-md w-full mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white">Log In</h1>
         </div>

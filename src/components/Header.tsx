@@ -13,6 +13,7 @@ export default function Header() {
   const isHomePage = location.pathname === '/';
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/join' || location.pathname === '/reset-password';
   const isLoginPage = location.pathname === '/login';
+  const isSignupPage = location.pathname === '/signup';
   const isProfilePage = location.pathname === '/profile';
   const isAnonHomePage = isHomePage && !currentUser;
 
@@ -54,8 +55,8 @@ export default function Header() {
   }, [profile?.familyId]);
 
 
-  // Hide header on anonymous home page
-  if (isAnonHomePage) {
+  // Hide header on anonymous home page, login, and signup
+  if (isAnonHomePage || isLoginPage || isSignupPage) {
     return null;
   }
 
@@ -65,18 +66,13 @@ export default function Header() {
         {isHomePage ? (
           <Link 
             to="/"
-            className="text-white font-semibold text-[26px] md:text-[22px]"
+            className="text-white flex items-baseline gap-1"
           >
-            JustUs
+            <span className="font-bold text-[22px]">JustUs</span>
+            {familyName && (
+              <span className="text-[18px] font-normal">: The {familyName} Family</span>
+            )}
           </Link>
-        ) : isLoginPage ? (
-          <button
-            onClick={() => navigate('/')}
-            className="text-white font-medium flex items-center"
-            aria-label="Go back"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
         ) : isAuthPage ? (
           <div /> // Empty div to maintain layout
         ) : isProfilePage ? (
@@ -95,13 +91,6 @@ export default function Header() {
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
           </button>
-        )}
-
-        {/* Family name centered on home page */}
-        {isHomePage && familyName && (
-          <div className="absolute left-1/2 transform -translate-x-1/2">
-            <span className="text-white/80 text-sm font-medium">{familyName}</span>
-          </div>
         )}
 
         <div className="flex items-center space-x-4">

@@ -1,4 +1,4 @@
 // This file is auto-generated during build
 export const BUILD_INFO = {
-  lastUpdated: '2025-09-03T23:36:10.425Z'
+  lastUpdated: '2025-09-03T23:42:14.849Z'
 };
