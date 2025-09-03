@@ -135,7 +135,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || submittingComment) return;
+    if (!newComment.trim() || submittingComment || !profile) return;
 
     setSubmittingComment(true);
     try {
@@ -143,7 +143,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
         .from('photo_comments')
         .insert({
           photo_id: photo.id,
-          user_id: profile?.id,
+          user_id: profile.id,
           comment: newComment.trim()
         })
         .select(`
@@ -160,9 +160,9 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
       setComments([data, ...comments]);
       setNewComment('');
       showToast('Comment added');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error adding comment:', err);
-      showToast('Failed to add comment');
+      showToast(err.message || 'Failed to add comment');
     } finally {
       setSubmittingComment(false);
     }
@@ -265,19 +265,19 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
 
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
-      <div className="flex flex-col md:flex-row h-full w-full max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row h-full w-full max-w-7xl mx-auto md:p-8">
         {/* Image Section */}
         <div 
-          className="flex-1 flex items-center justify-center p-4 cursor-pointer"
+          className="flex-1 flex items-center justify-center relative bg-black cursor-pointer overflow-hidden"
           onClick={onClose}
         >
-          <div className="relative" onClick={(e) => e.stopPropagation()}>
+          <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
             {imageLoaded && (
               <button
                 onClick={onClose}
-                className="absolute -top-10 right-0 text-white hover:text-gray-300 z-10 md:top-2 md:right-2"
+                className="absolute top-4 right-4 text-white hover:text-gray-300 z-10 bg-black/50 rounded-full p-2"
               >
-                <X className="w-8 h-8" />
+                <X className="w-6 h-6" />
               </button>
             )}
 
@@ -295,7 +295,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
             <img
               src={photo.medium_url || photo.photo_url}
               alt={`Photo by ${photo.username || 'User'}`}
-              className="max-w-full max-h-[90vh] w-auto h-auto"
+              className="w-full h-full object-contain"
               onLoad={() => setImageLoaded(true)}
             />
           </div>
@@ -303,7 +303,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
 
         {/* Comments Section */}
         {imageLoaded && (
-          <div className="w-full md:w-96 bg-gray-900 flex flex-col">
+          <div className="w-full md:w-96 bg-gray-900 flex flex-col h-full md:h-auto">
             {/* Photo Info Header */}
             <div className="p-4 border-b border-gray-800">
               <div className="flex items-center justify-between">
