@@ -81,20 +81,31 @@ export default function Family() {
         // Load family members
         const { data: membersData, error: membersError } = await supabase
           .from('family_members')
-          .select(`
-            *,
-            profiles:user_id (
-              username,
-              avatar_url
-            )
-          `)
+          .select('*')
           .eq('family_id', familyId);
 
         if (membersError) throw membersError;
-        setMembers(membersData || []);
+
+        // Load profiles for each member
+        const memberProfiles = await Promise.all(
+          (membersData || []).map(async (member) => {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', member.user_id)
+              .single();
+            
+            return {
+              ...member,
+              profiles: profileData
+            };
+          })
+        );
+
+        setMembers(memberProfiles);
 
         // Check if current user is admin
-        let currentUserMember = membersData?.find(m => m.user_id === profile.id);
+        let currentUserMember = memberProfiles?.find(m => m.user_id === profile.id);
         
         // If creator is not in members, add them as admin
         if (!currentUserMember && familyData.created_by === profile.id) {
@@ -106,19 +117,24 @@ export default function Family() {
               user_id: profile.id,
               role: 'admin'
             })
-            .select(`
-              *,
-              profiles:user_id (
-                username,
-                avatar_url
-              )
-            `)
+            .select('*')
             .single();
             
           if (!addError && newMember) {
-            membersData = [...(membersData || []), newMember];
-            setMembers(membersData);
-            currentUserMember = newMember;
+            // Get profile for new member
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', profile.id)
+              .single();
+            
+            const memberWithProfile = {
+              ...newMember,
+              profiles: profileData
+            };
+            
+            setMembers([...memberProfiles, memberWithProfile]);
+            currentUserMember = memberWithProfile;
           }
         }
         
