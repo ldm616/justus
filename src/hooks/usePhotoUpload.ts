@@ -24,10 +24,10 @@ export function usePhotoUpload(onSuccess?: () => void) {
         const startX = (img.width - size) / 2;
         const startY = (img.height - size) / 2;
 
-        // Create full size (1000x1000) image for high quality
-        canvas.width = 1000;
-        canvas.height = 1000;
-        ctx.drawImage(img, startX, startY, size, size, 0, 0, 1000, 1000);
+        // Create full size (2000x2000) image for high quality
+        canvas.width = 2000;
+        canvas.height = 2000;
+        ctx.drawImage(img, startX, startY, size, size, 0, 0, 2000, 2000);
         
         canvas.toBlob((fullBlob) => {
           if (!fullBlob) {
@@ -35,10 +35,10 @@ export function usePhotoUpload(onSuccess?: () => void) {
             return;
           }
 
-          // Create medium size (600x600) for modal view
-          canvas.width = 600;
-          canvas.height = 600;
-          ctx.drawImage(img, startX, startY, size, size, 0, 0, 600, 600);
+          // Create medium size (1200x1200) for modal view
+          canvas.width = 1200;
+          canvas.height = 1200;
+          ctx.drawImage(img, startX, startY, size, size, 0, 0, 1200, 1200);
           
           canvas.toBlob((mediumBlob) => {
             if (!mediumBlob) {
@@ -46,10 +46,10 @@ export function usePhotoUpload(onSuccess?: () => void) {
               return;
             }
 
-            // Create thumbnail (400x400) for grid view
-            canvas.width = 400;
-            canvas.height = 400;
-            ctx.drawImage(img, startX, startY, size, size, 0, 0, 400, 400);
+            // Create thumbnail (600x600) for grid view
+            canvas.width = 600;
+            canvas.height = 600;
+            ctx.drawImage(img, startX, startY, size, size, 0, 0, 600, 600);
             
             canvas.toBlob((thumbBlob) => {
               if (!thumbBlob) {
@@ -57,9 +57,9 @@ export function usePhotoUpload(onSuccess?: () => void) {
                 return;
               }
               resolve({ full: fullBlob, medium: mediumBlob, thumbnail: thumbBlob });
-            }, 'image/jpeg', 0.95);
-          }, 'image/jpeg', 0.95);
-        }, 'image/jpeg', 0.95);
+            }, 'image/jpeg', 0.98);
+          }, 'image/jpeg', 0.98);
+        }, 'image/jpeg', 1.0);
       };
 
       img.onerror = () => reject(new Error('Failed to load image'));

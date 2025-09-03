@@ -306,8 +306,8 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
             return;
           }
 
-          if (file.size > 10 * 1024 * 1024) {
-            alert('Image size must be less than 10MB');
+          if (file.size > 20 * 1024 * 1024) {
+            alert('Image size must be less than 20MB');
             return;
           }
 
