@@ -6,6 +6,7 @@ import { useUser } from '../contexts/UserContext';
 
 export default function Header() {
   const [currentUser, setCurrentUser] = React.useState<any>(null);
+  const [familyName, setFamilyName] = React.useState<string | null>(null);
   const { profile } = useUser();
   const location = useLocation();
   const navigate = useNavigate();
@@ -30,6 +31,27 @@ export default function Header() {
     };
   }, []);
 
+  // Fetch family name when profile changes
+  React.useEffect(() => {
+    const fetchFamilyName = async () => {
+      if (profile?.familyId) {
+        const { data } = await supabase
+          .from('families')
+          .select('name')
+          .eq('id', profile.familyId)
+          .single();
+        
+        if (data) {
+          setFamilyName(data.name);
+        }
+      } else {
+        setFamilyName(null);
+      }
+    };
+
+    fetchFamilyName();
+  }, [profile?.familyId]);
+
 
   // Hide header on anonymous home page
   if (isAnonHomePage) {
@@ -38,7 +60,7 @@ export default function Header() {
 
   return (
     <header className="header-primary fixed top-0 left-0 right-0 z-50">
-      <div className="h-full max-w-4xl mx-auto px-[10px] md:px-4 flex justify-between items-center">
+      <div className="h-full max-w-4xl mx-auto px-[10px] md:px-4 flex justify-between items-center relative">
         {isHomePage ? (
           <Link 
             to="/"
@@ -64,6 +86,13 @@ export default function Header() {
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
           </button>
+        )}
+
+        {/* Family name centered on home page */}
+        {isHomePage && familyName && (
+          <div className="absolute left-1/2 transform -translate-x-1/2">
+            <span className="text-white/80 text-sm font-medium">{familyName}</span>
+          </div>
         )}
 
         <div className="flex items-center space-x-4">
