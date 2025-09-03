@@ -34,10 +34,13 @@ export default function Join() {
 
   const loadInvitation = async () => {
     if (!token) {
+      console.error('No token in URL');
       showToast('Invalid invitation link');
       navigate('/login');
       return;
     }
+
+    console.log('Loading invitation with token:', token);
 
     try {
       const { data, error } = await supabase
@@ -54,7 +57,10 @@ export default function Join() {
         .eq('invite_token', token)
         .single();
 
+      console.log('Invitation query result:', { data, error });
+
       if (error || !data) {
+        console.error('Failed to load invitation:', error);
         showToast('Invalid or expired invitation');
         navigate('/login');
         return;
