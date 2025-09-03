@@ -335,8 +335,8 @@ function Profile() {
 
             <div className="space-y-6 w-full">
               <div className="flex flex-col items-center">
-                <label className="relative group cursor-pointer">
-                  <div className="w-32 h-32 avatar-placeholder mb-4 relative shadow-md overflow-hidden">
+                <label className="relative group cursor-pointer mb-4">
+                  <div className="w-32 h-32 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden relative shadow-md">
                     {avatarUrl ? (
                       <img
                         src={avatarUrl}

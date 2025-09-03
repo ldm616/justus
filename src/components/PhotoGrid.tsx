@@ -25,6 +25,7 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { profile } = useUser();
   const { showToast } = useToast();
@@ -243,20 +244,28 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
       {selectedPhoto && (
         <div 
           className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedPhoto(null)}
+          onClick={() => {
+            setSelectedPhoto(null);
+            setImageLoaded(false);
+          }}
         >
           {/* Image container with close button */}
           <div className="relative" onClick={(e) => e.stopPropagation()}>
-            {/* Close button positioned relative to image */}
-            <button
-              onClick={() => setSelectedPhoto(null)}
-              className="absolute -top-10 right-0 text-white hover:text-gray-300 z-10 md:top-2 md:right-2"
-            >
-              <X className="w-8 h-8" />
-            </button>
+            {/* Close button - only show after image loads */}
+            {imageLoaded && (
+              <button
+                onClick={() => {
+                  setSelectedPhoto(null);
+                  setImageLoaded(false);
+                }}
+                className="absolute -top-10 right-0 text-white hover:text-gray-300 z-10 md:top-2 md:right-2"
+              >
+                <X className="w-8 h-8" />
+              </button>
+            )}
 
-            {/* Replace button - only show if it's the user's photo and today */}
-            {profile && selectedPhoto.user_id === profile.id && isToday(selectedPhoto.upload_date) && (
+            {/* Replace button - only show after image loads and if it's the user's photo and today */}
+            {imageLoaded && profile && selectedPhoto.user_id === profile.id && isToday(selectedPhoto.upload_date) && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -275,10 +284,12 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
               alt={`Photo by ${selectedPhoto.username || 'User'}`}
               className="max-w-full max-h-[90vh] w-auto h-auto"
               key={selectedPhoto.medium_url || selectedPhoto.photo_url}
+              onLoad={() => setImageLoaded(true)}
             />
             
-            {/* Photo info overlay */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+            {/* Photo info overlay - only show after image loads */}
+            {imageLoaded && (
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
               <div className="flex items-center gap-3">
                 {selectedPhoto.avatar_url ? (
                   <img 
@@ -298,7 +309,8 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
                   </p>
                 </div>
               </div>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}
