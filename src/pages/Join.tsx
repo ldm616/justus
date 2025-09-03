@@ -157,15 +157,22 @@ export default function Join() {
         }
       }
 
-      // Create profile for new user
-      await supabase
+      // Create or update profile for new user
+      const { error: profileError } = await supabase
         .from('profiles')
-        .insert({
+        .upsert({
           id: userId,
           username: username.trim(),
           avatar_url: avatarUrl,
           family_id: invitation.family_id
+        }, {
+          onConflict: 'id'
         });
+
+      if (profileError) {
+        console.error('Error creating profile:', profileError);
+        throw profileError;
+      }
       
 
       // Add user to family
@@ -177,11 +184,7 @@ export default function Join() {
           role: 'member'
         });
 
-      // Update profile with family_id if needed
-      await supabase
-        .from('profiles')
-        .update({ family_id: invitation.family_id })
-        .eq('id', userId);
+      // Profile already has family_id from upsert above, no need to update again
 
       // Mark invitation as used
       await supabase
@@ -193,7 +196,9 @@ export default function Join() {
         .eq('id', invitation.id);
 
       showToast(`Welcome to ${invitation.families.name}!`);
-      navigate('/');
+      
+      // Force a page reload to ensure UserContext picks up the new profile
+      window.location.href = '/';
     } catch (err: any) {
       console.error('Error joining family:', err);
       showToast(err.message || 'Failed to join family');
