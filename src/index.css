@@ -27,7 +27,7 @@
   
   /* Header styles */
   .header-primary {
-    @apply bg-indigo-600;
+    @apply bg-black;
     height: 60px;
   }
   
