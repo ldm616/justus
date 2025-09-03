@@ -25,7 +25,6 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
-  const [imageLoaded, setImageLoaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { profile } = useUser();
   const { showToast } = useToast();
@@ -244,10 +243,7 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
       {selectedPhoto && (
         <PhotoModal
           photo={selectedPhoto}
-          onClose={() => {
-            setSelectedPhoto(null);
-            setImageLoaded(false);
-          }}
+          onClose={() => setSelectedPhoto(null)}
           onReplace={() => fileInputRef.current?.click()}
           uploading={uploading}
           isToday={isToday(selectedPhoto.upload_date)}

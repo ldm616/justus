@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, RefreshCw, Send, Edit2, Trash2, Tag, MessageCircle, MoreVertical } from 'lucide-react';
+import { X, RefreshCw, Send, Edit2, Trash2, Tag } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../contexts/UserContext';
 import { formatTimeAgo } from '../utils/timeFormat';

@@ -40,7 +40,8 @@
       "Read(/Users/malcolmlewis/Documents/Repos/2doozy/**)",
       "Read(/Users/malcolmlewis/Documents/Repos/2doozy/supabase/functions/resizeImage/**)",
       "Bash(find:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []
