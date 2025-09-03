@@ -97,11 +97,11 @@ const Login: React.FC = () => {
     <div className="min-h-screen flex items-start justify-center px-4 pt-[80px] md:pt-[60px]">
       <div className="max-w-sm w-full">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-4xl font-extrabold text-white mb-2">
             JustUs
           </h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Share moments with your group
+          <p className="text-gray-400">
+            Share moments with your family
           </p>
         </div>
 
@@ -111,8 +111,8 @@ const Login: React.FC = () => {
               onClick={() => setIsSignUp(false)}
               className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                 !isSignUp
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                  ? 'text-white border-b-2 border-white'
+                  : 'text-gray-500 hover:text-gray-300'
               }`}
             >
               Log In
@@ -121,8 +121,8 @@ const Login: React.FC = () => {
               onClick={() => setIsSignUp(true)}
               className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                 isSignUp
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                  ? 'text-white border-b-2 border-white'
+                  : 'text-gray-500 hover:text-gray-300'
               }`}
             >
               Sign Up
@@ -131,7 +131,7 @@ const Login: React.FC = () => {
 
           <div className="p-6">
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
+              <div className="mb-4 p-3 bg-red-900/20 border border-red-800/30 text-red-400 rounded-md text-sm">
                 {error}
               </div>
             )}
@@ -153,14 +153,14 @@ const Login: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-10"
+                  className="w-full px-3 py-2 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-white/50 bg-gray-800 text-white pr-10"
                   placeholder="Password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-200"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -192,7 +192,7 @@ const Login: React.FC = () => {
 
             {!isSignUp && (
               <div className="mt-4 text-center">
-                <Link to="/reset-password" className="text-sm text-blue-600 hover:text-blue-700">
+                <Link to="/reset-password" className="text-sm text-gray-400 hover:text-gray-200">
                   Forgot password?
                 </Link>
               </div>

@@ -30,13 +30,15 @@ export default function Header() {
   return (
     <header className="header-primary fixed top-0 left-0 right-0 z-50">
       <div className="h-full max-w-4xl mx-auto px-[10px] md:px-4 flex justify-between items-center">
-        {isHomePage || isAuthPage ? (
+        {isHomePage ? (
           <Link 
             to="/"
             className="text-white font-semibold text-[26px] md:text-[22px]"
           >
             JustUs
           </Link>
+        ) : isAuthPage ? (
+          <div /> // Empty div to maintain layout
         ) : (
           <button
             onClick={() => navigate(-1)}
@@ -63,15 +65,13 @@ export default function Header() {
               </div>
             </Link>
           ) : (
-            !isAuthPage && (
-              <Link 
-                to="/login"
-                className="text-white flex items-center"
-                aria-label="Log In"
-              >
-                <LogIn className="w-6 h-6" />
-              </Link>
-            )
+            <Link 
+              to="/login"
+              className="text-white flex items-center"
+              aria-label="Log In"
+            >
+              <LogIn className="w-6 h-6" />
+            </Link>
           )}
         </div>
       </div>
