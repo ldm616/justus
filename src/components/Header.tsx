@@ -2,11 +2,12 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { User, ArrowLeft, LogIn, Home } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { useUser } from '../contexts/UserContext';
 import AppIcon from './AppIcon';
 
 export default function Header() {
   const [currentUser, setCurrentUser] = React.useState<any>(null);
-  const [userProfile, setUserProfile] = React.useState<any>(null);
+  const { profile } = useUser();
   const location = useLocation();
   const navigate = useNavigate();
   const isHomePage = location.pathname === '/';
@@ -18,37 +19,17 @@ export default function Header() {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setCurrentUser(session?.user ?? null);
-      if (session?.user) {
-        loadUserProfile(session.user.id);
-      }
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setCurrentUser(session?.user ?? null);
-      if (session?.user) {
-        loadUserProfile(session.user.id);
-      } else {
-        setUserProfile(null);
-      }
     });
 
     return () => {
       subscription.unsubscribe();
     };
   }, []);
-
-  const loadUserProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('username, avatar_url')
-      .eq('id', userId)
-      .single();
-    
-    if (data) {
-      setUserProfile(data);
-    }
-  };
 
 
   // Hide header on anonymous home page
@@ -91,10 +72,10 @@ export default function Header() {
           {currentUser && !isAuthPage ? (
             <Link to="/profile" className="flex items-center space-x-2 text-white">
               <div className="relative w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                {userProfile?.avatar_url ? (
+                {profile?.avatarUrl ? (
                   <img 
-                    src={userProfile.avatar_url} 
-                    alt={userProfile?.username || 'User'} 
+                    src={profile.avatarUrl} 
+                    alt={profile?.username || 'User'} 
                     className="avatar w-8 h-8"
                   />
                 ) : (
