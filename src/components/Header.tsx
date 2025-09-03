@@ -11,7 +11,8 @@ export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const isHomePage = location.pathname === '/';
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/join' || location.pathname === '/reset-password';
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/join' || location.pathname === '/reset-password';
+  const isLoginPage = location.pathname === '/login';
   const isProfilePage = location.pathname === '/profile';
   const isAnonHomePage = isHomePage && !currentUser;
 
@@ -68,6 +69,14 @@ export default function Header() {
           >
             JustUs
           </Link>
+        ) : isLoginPage ? (
+          <button
+            onClick={() => navigate('/')}
+            className="text-white font-medium flex items-center"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
         ) : isAuthPage ? (
           <div /> // Empty div to maintain layout
         ) : isProfilePage ? (
