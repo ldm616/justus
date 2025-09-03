@@ -267,10 +267,10 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
     <div className="fixed inset-0 bg-black z-50 flex flex-col md:flex-row">
       {/* Image Section - 60% width on desktop, full width on mobile */}
       <div 
-        className="w-full md:w-[60%] h-[60vh] md:h-full flex items-start justify-center relative bg-black cursor-pointer overflow-hidden"
+        className="w-full md:w-[60%] h-[60vh] md:h-full flex items-center justify-center relative bg-black cursor-pointer"
         onClick={onClose}
       >
-        <div className="relative w-full h-full flex items-start justify-center pt-8" onClick={(e) => e.stopPropagation()}>
+        <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
           {imageLoaded && (
             <button
               onClick={onClose}
@@ -302,7 +302,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
 
       {/* Comments Section - 40% width on desktop, full width on mobile */}
       {imageLoaded && (
-        <div className="w-full md:w-[40%] h-[40vh] md:h-full bg-gray-900 flex flex-col overflow-hidden">
+        <div className="w-full md:w-[40%] h-[40vh] md:h-full bg-gray-900 flex flex-col">
             {/* Photo Info Header */}
             <div className="px-2.5 py-4 border-b border-gray-800">
               <div className="flex items-center justify-between">
