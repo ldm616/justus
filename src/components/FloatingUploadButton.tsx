@@ -114,18 +114,23 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
       // Crop and resize the image
       const { full, medium, thumbnail } = await cropAndResizeImage(selectedFile);
 
-      // Generate unique filenames
-      const timestamp = Date.now();
-      const fullFileName = `${profile.id}/${timestamp}_full.jpg`;
-      const mediumFileName = `${profile.id}/${timestamp}_medium.jpg`;
-      const thumbFileName = `${profile.id}/${timestamp}_thumb.jpg`;
+      // Generate filenames - use date-based naming for replaceability
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const dateString = `${year}-${month}-${day}`;
+      
+      const fullFileName = `${profile.id}/${dateString}_full.jpg`;
+      const mediumFileName = `${profile.id}/${dateString}_medium.jpg`;
+      const thumbFileName = `${profile.id}/${dateString}_thumb.jpg`;
 
       // Upload full size image
       const { error: fullError } = await supabase.storage
         .from('photos')
         .upload(fullFileName, full, {
           cacheControl: '31536000',
-          upsert: hasUploadedToday // Allow overwrite if updating today's photo
+          upsert: true // Always allow overwrite for same-day photos
         });
 
       if (fullError) throw fullError;
@@ -135,7 +140,7 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
         .from('photos')
         .upload(mediumFileName, medium, {
           cacheControl: '31536000',
-          upsert: hasUploadedToday
+          upsert: true
         });
 
       if (mediumError) throw mediumError;
@@ -145,7 +150,7 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
         .from('photos')
         .upload(thumbFileName, thumbnail, {
           cacheControl: '31536000',
-          upsert: hasUploadedToday
+          upsert: true
         });
 
       if (thumbError) throw thumbError;
@@ -163,49 +168,21 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
         .from('photos')
         .getPublicUrl(thumbFileName);
 
-      // Save or update photo record in database
-      if (hasUploadedToday) {
-        // Update existing photo
-        // Get today's date in local timezone as YYYY-MM-DD
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        const todayString = `${year}-${month}-${day}`;
-        
-        const { error: updateError } = await supabase
-          .from('photos')
-          .update({
-            photo_url: fullUrl,
-            medium_url: mediumUrl,
-            thumbnail_url: thumbUrl,
-            created_at: new Date().toISOString()
-          })
-          .eq('user_id', profile.id)
-          .eq('upload_date', todayString);
+      // Use upsert to either insert or update today's photo
+      const { error: upsertError } = await supabase
+        .from('photos')
+        .upsert({
+          user_id: profile.id,
+          photo_url: fullUrl,
+          medium_url: mediumUrl,
+          thumbnail_url: thumbUrl,
+          upload_date: dateString,
+          created_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,upload_date' // Upsert based on unique constraint
+        });
 
-        if (updateError) throw updateError;
-      } else {
-        // Insert new photo
-        // Get today's date in local timezone as YYYY-MM-DD
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        const todayString = `${year}-${month}-${day}`;
-        
-        const { error: insertError } = await supabase
-          .from('photos')
-          .insert({
-            user_id: profile.id,
-            photo_url: fullUrl,
-            medium_url: mediumUrl,
-            thumbnail_url: thumbUrl,
-            upload_date: todayString
-          });
-
-        if (insertError) throw insertError;
-      }
+      if (upsertError) throw upsertError;
 
       // Success!
       onPhotoUploaded();
