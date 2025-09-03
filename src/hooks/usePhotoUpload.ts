@@ -234,7 +234,6 @@ export function usePhotoUpload(onSuccess?: () => void) {
 
       // Success!
       console.log('Upload successful!');
-      showToast('Photo uploaded successfully!');
       if (onSuccess) {
         onSuccess();
       }

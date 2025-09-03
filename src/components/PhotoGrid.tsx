@@ -33,7 +33,6 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
   const { uploading, uploadPhoto, canvasRef } = usePhotoUpload(() => {
     setSelectedPhoto(null);
     fetchPhotos();
-    showToast('Photo updated successfully!');
   });
 
   const fetchPhotos = async () => {
@@ -56,6 +55,7 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
             avatar_url
           )
         `)
+        .order('upload_date', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(50);
       
