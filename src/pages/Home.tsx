@@ -45,8 +45,14 @@ export default function Home() {
   };
 
   const handlePhotoUploaded = () => {
+    console.log('handlePhotoUploaded called in Home component');
     setHasUploadedToday(true);
-    setRefreshTrigger(prev => prev + 1); // Trigger grid refresh
+    console.log('Triggering grid refresh...');
+    setRefreshTrigger(prev => {
+      const newValue = prev + 1;
+      console.log('RefreshTrigger updated from', prev, 'to', newValue);
+      return newValue;
+    });
   };
 
   return (

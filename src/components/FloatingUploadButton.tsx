@@ -176,16 +176,26 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
       const thumbUrlWithCache = `${thumbUrl}?t=${cacheBuster}`;
 
       // Check if photo exists for today
-      const { data: existingPhoto } = await supabase
+      console.log('Checking for existing photo with:', { user_id: profile.id, upload_date: dateString });
+      const { data: existingPhoto, error: checkError } = await supabase
         .from('photos')
         .select('id')
         .eq('user_id', profile.id)
         .eq('upload_date', dateString)
         .single();
+      
+      console.log('Existing photo check result:', { existingPhoto, checkError });
 
       if (existingPhoto) {
         // Update existing photo
-        const { error: updateError } = await supabase
+        console.log('Updating existing photo with ID:', existingPhoto.id);
+        console.log('New URLs:', {
+          photo_url: fullUrlWithCache,
+          medium_url: mediumUrlWithCache,
+          thumbnail_url: thumbUrlWithCache
+        });
+        
+        const { data: updateData, error: updateError } = await supabase
           .from('photos')
           .update({
             photo_url: fullUrlWithCache,
@@ -193,15 +203,19 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
             thumbnail_url: thumbUrlWithCache,
             created_at: new Date().toISOString()
           })
-          .eq('id', existingPhoto.id);
+          .eq('id', existingPhoto.id)
+          .select();
 
+        console.log('Update result:', { updateData, updateError });
+        
         if (updateError) {
           console.error('Update error:', updateError);
           throw updateError;
         }
       } else {
         // Insert new photo
-        const { error: insertError } = await supabase
+        console.log('Inserting new photo for date:', dateString);
+        const { data: insertData, error: insertError } = await supabase
           .from('photos')
           .insert({
             user_id: profile.id,
@@ -210,8 +224,11 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
             thumbnail_url: thumbUrlWithCache,
             upload_date: dateString,
             created_at: new Date().toISOString()
-          });
+          })
+          .select();
 
+        console.log('Insert result:', { insertData, insertError });
+        
         if (insertError) {
           console.error('Insert error:', insertError);
           throw insertError;
@@ -219,8 +236,9 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
       }
 
       // Success!
-      console.log('Upload successful!');
+      console.log('Upload successful! Calling onPhotoUploaded callback...');
       onPhotoUploaded();
+      console.log('Closing modal and resetting state...');
       setShowModal(false);
       setSelectedFile(null);
       setPreviewUrl(null);

@@ -26,6 +26,7 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
   const { profile } = useUser();
 
   const fetchPhotos = async () => {
+    console.log('PhotoGrid: fetchPhotos called');
     try {
       // Fetch photos with user profile information
       const { data, error } = await supabase
@@ -45,6 +46,8 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
         `)
         .order('created_at', { ascending: false })
         .limit(50);
+      
+      console.log('PhotoGrid: Fetched photos:', { data, error });
 
       if (error) throw error;
 
@@ -61,6 +64,7 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
         avatar_url: photo.profiles?.avatar_url || null
       }));
 
+      console.log('PhotoGrid: Setting photos state with', typedPhotos.length, 'photos');
       setPhotos(typedPhotos);
     } catch (err) {
       console.error('Error fetching photos:', err);
@@ -70,6 +74,7 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
   };
 
   useEffect(() => {
+    console.log('PhotoGrid: refreshTrigger changed to', refreshTrigger);
     fetchPhotos();
   }, [refreshTrigger]);
 
