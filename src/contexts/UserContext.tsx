@@ -6,6 +6,8 @@ interface UserProfile {
   username: string | null;
   avatarUrl: string | null;
   isAdmin: boolean;
+  familyId: string | null;
+  needsPasswordChange: boolean;
 }
 
 interface UserContextType {
@@ -62,7 +64,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       let { data, error } = await supabase
         .from('profiles')
-        .select('username, avatar_url, is_admin')
+        .select('username, avatar_url, is_admin, family_id, needs_password_change')
         .eq('id', userId)
         .maybeSingle();
 
@@ -75,7 +77,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: userId,
           username: data.username,
           avatarUrl: data.avatar_url,
-          isAdmin: data.is_admin || false
+          isAdmin: data.is_admin || false,
+          familyId: data.family_id || null,
+          needsPasswordChange: data.needs_password_change || false
         });
       }
     } catch (error) {

@@ -11,6 +11,9 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [username, setUsername] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const navigate = useNavigate();
 
   const createProfile = async (userId: string, username: string) => {
@@ -29,6 +32,85 @@ const Login: React.FC = () => {
     }
   };
 
+  const checkInvitation = async (email: string, tempPassword: string) => {
+    const { data: invitation } = await supabase
+      .from('family_invitations')
+      .select('*, families(name)')
+      .eq('email', email.toLowerCase().trim())
+      .eq('temp_password', tempPassword)
+      .eq('used', false)
+      .single();
+      
+    return invitation;
+  };
+
+  const joinFamilyFromInvitation = async (userId: string, invitation: any) => {
+    // Mark invitation as used
+    await supabase
+      .from('family_invitations')
+      .update({ used: true })
+      .eq('id', invitation.id);
+
+    // Add user to family
+    await supabase
+      .from('family_members')
+      .insert({
+        family_id: invitation.family_id,
+        user_id: userId,
+        role: 'member'
+      });
+
+    // Update profile with family_id and mark for password change
+    await supabase
+      .from('profiles')
+      .update({ 
+        family_id: invitation.family_id,
+        needs_password_change: true 
+      })
+      .eq('id', userId);
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    if (newPassword !== confirmNewPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ 
+        password: newPassword 
+      });
+      
+      if (updateError) throw updateError;
+
+      // Mark password as changed
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await supabase
+          .from('profiles')
+          .update({ needs_password_change: false })
+          .eq('id', session.user.id);
+      }
+
+      navigate('/');
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -41,7 +123,59 @@ const Login: React.FC = () => {
     }
 
     try {
-      if (isSignUp) {
+      // Check if this is an invitation login
+      const invitation = await checkInvitation(email, password);
+      
+      if (invitation && !isSignUp) {
+        // This is an invitation - sign them up with the temp password
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`
+          }
+        });
+        
+        if (signUpError) {
+          if (signUpError.message.includes('already registered')) {
+            // User exists, try to sign in normally
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
+            
+            if (signInError) {
+              setError('Invalid credentials. If you already have an account, please use your password.');
+              return;
+            }
+            
+            // Check if they need to change password
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('needs_password_change')
+              .eq('id', signInData.user.id)
+              .single();
+            
+            if (profile?.needs_password_change) {
+              setIsChangingPassword(true);
+              return;
+            }
+            
+            navigate('/');
+          } else {
+            setError(signUpError.message);
+          }
+          return;
+        }
+
+        if (data.user) {
+          // Create profile with invitation family
+          await createProfile(data.user.id, email.split('@')[0].substring(0, 15));
+          await joinFamilyFromInvitation(data.user.id, invitation);
+          setIsChangingPassword(true);
+          return;
+        }
+      } else if (isSignUp) {
         if (!username || username.length > 15) {
           setError('Please enter a username (max 15 characters)');
           setLoading(false);
@@ -92,6 +226,68 @@ const Login: React.FC = () => {
       setLoading(false);
     }
   };
+
+  if (isChangingPassword) {
+    return (
+      <div className="min-h-screen flex items-start justify-center px-4 pt-[80px] md:pt-[60px]">
+        <div className="max-w-sm w-full">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-extrabold text-white mb-2">
+              Change Your Password
+            </h1>
+            <p className="text-gray-400">
+              Please set a new password for your account
+            </p>
+          </div>
+
+          <div className="card overflow-hidden">
+            <div className="p-6">
+              {error && (
+                <div className="mb-4 p-3 bg-red-900/20 border border-red-800/30 text-red-400 rounded-md text-sm">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handlePasswordChange} className="space-y-4">
+                <div>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="form-input"
+                    placeholder="New password (min 6 chars)"
+                    required
+                    minLength={6}
+                  />
+                </div>
+
+                <div>
+                  <input
+                    type="password"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    className="form-input"
+                    placeholder="Confirm new password"
+                    required
+                    minLength={6}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading && <RefreshCw className="w-5 h-5 animate-spin" />}
+                  Set New Password
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-start justify-center px-4 pt-[80px] md:pt-[60px]">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Camera, LogOut, X, Pencil, Check, Mail, Lock } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Camera, LogOut, X, Pencil, Check, Mail, Lock, Users } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../contexts/UserContext';
 
@@ -376,6 +376,14 @@ function Profile() {
               </div>
 
               <div className="flex flex-col space-y-3 max-w-xs mx-auto w-full">
+                <Link
+                  to="/family"
+                  className="w-full inline-flex justify-center items-center btn-secondary"
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Manage Family
+                </Link>
+
                 <button
                   className="w-full inline-flex justify-center items-center btn-secondary"
                   onClick={() => setShowChangeEmail(true)}

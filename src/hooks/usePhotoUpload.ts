@@ -159,7 +159,8 @@ export function usePhotoUpload(onSuccess?: () => void) {
             photo_url: fullUrl,
             medium_url: mediumUrl,
             thumbnail_url: thumbUrl,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            family_id: profile.familyId
           })
           .eq('user_id', profile.id)
           .eq('upload_date', dateString)
@@ -220,7 +221,8 @@ export function usePhotoUpload(onSuccess?: () => void) {
             medium_url: mediumUrl,
             thumbnail_url: thumbUrl,
             upload_date: dateString,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            family_id: profile.familyId
           })
           .select();
 

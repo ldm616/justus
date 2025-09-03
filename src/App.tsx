@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
+import Family from './pages/Family';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
@@ -62,6 +63,11 @@ export default function App() {
               <Route path="/profile" element={
                 <AuthGuard>
                   <Profile />
+                </AuthGuard>
+              } />
+              <Route path="/family" element={
+                <AuthGuard>
+                  <Family />
                 </AuthGuard>
               } />
               <Route path="*" element={<Navigate to="/" replace />} />
