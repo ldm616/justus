@@ -15,7 +15,7 @@ export default function Toast({ message, onClose, duration = 3000 }: ToastProps)
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none">
-      <div className="bg-black text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-4 max-w-md pointer-events-auto animate-fade-in">
+      <div className="bg-[#222] text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-4 max-w-md pointer-events-auto animate-fade-in border border-white/20">
         <span className="text-sm">{message}</span>
         <button
           onClick={onClose}

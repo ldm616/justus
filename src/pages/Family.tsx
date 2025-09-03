@@ -307,7 +307,7 @@ export default function Family() {
   };
 
   const removeMember = async (memberId: string) => {
-    if (!confirm('Are you sure you want to remove this member?')) return;
+    if (!confirm('Are you sure?')) return;
 
     try {
       // Remove from family_members
