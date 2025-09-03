@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import { usePhotoUpload } from '../hooks/usePhotoUpload';
+import { useToast } from '../contexts/ToastContext';
 
 interface FloatingUploadButtonProps {
   onPhotoUploaded: () => void;
@@ -10,18 +11,19 @@ interface FloatingUploadButtonProps {
 export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday }: FloatingUploadButtonProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploading, uploadPhoto, canvasRef } = usePhotoUpload(onPhotoUploaded);
+  const { showToast } = useToast();
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      showToast('Please select an image file (JPEG or PNG)');
       return;
     }
 
     if (file.size > 20 * 1024 * 1024) {
-      alert('Image size must be less than 20MB');
+      showToast('Image size must be less than 20MB');
       return;
     }
 

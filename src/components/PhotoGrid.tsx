@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../contexts/UserContext';
 import { usePhotoUpload } from '../hooks/usePhotoUpload';
+import { useToast } from '../contexts/ToastContext';
 import { X, RefreshCw } from 'lucide-react';
 
 interface Photo {
@@ -26,11 +27,13 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { profile } = useUser();
+  const { showToast } = useToast();
   
   // Use the shared upload hook with callback to refresh grid
   const { uploading, uploadPhoto, canvasRef } = usePhotoUpload(() => {
     setSelectedPhoto(null);
     fetchPhotos();
+    showToast('Photo updated successfully!');
   });
 
   const fetchPhotos = async () => {
@@ -302,12 +305,12 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
           if (!file) return;
 
           if (!file.type.startsWith('image/')) {
-            alert('Please select an image file');
+            showToast('Please select an image file (JPEG or PNG)');
             return;
           }
 
           if (file.size > 20 * 1024 * 1024) {
-            alert('Image size must be less than 20MB');
+            showToast('Image size must be less than 20MB');
             return;
           }
 

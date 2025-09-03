@@ -1,11 +1,13 @@
 import { useState, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../contexts/UserContext';
+import { useToast } from '../contexts/ToastContext';
 
 export function usePhotoUpload(onSuccess?: () => void) {
   const [uploading, setUploading] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { profile } = useUser();
+  const { showToast } = useToast();
 
   const cropAndResizeImage = (file: File, canvas: HTMLCanvasElement): Promise<{ full: Blob; medium: Blob; thumbnail: Blob }> => {
     return new Promise((resolve, reject) => {
@@ -232,12 +234,26 @@ export function usePhotoUpload(onSuccess?: () => void) {
 
       // Success!
       console.log('Upload successful!');
+      showToast('Photo uploaded successfully!');
       if (onSuccess) {
         onSuccess();
       }
     } catch (err: any) {
       console.error('Upload error:', err);
-      alert(err.message || 'Failed to upload photo');
+      const errorMessage = err.message || 'Failed to upload photo';
+      
+      // Provide user-friendly error messages
+      if (errorMessage.includes('storage')) {
+        showToast('Failed to upload image. Please try again.');
+      } else if (errorMessage.includes('size')) {
+        showToast('Image is too large. Please choose a smaller image.');
+      } else if (errorMessage.includes('type')) {
+        showToast('Invalid image format. Please use JPEG or PNG.');
+      } else if (errorMessage.includes('network')) {
+        showToast('Network error. Please check your connection.');
+      } else {
+        showToast('Something went wrong. Please try again.');
+      }
     } finally {
       setUploading(false);
     }
