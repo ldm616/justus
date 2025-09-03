@@ -285,7 +285,7 @@ export default function Family() {
       // Copy to clipboard
       await navigator.clipboard.writeText(magicLink);
       setCopiedLink(invitation.id);
-      showToast('Magic link copied to clipboard!');
+      showToast('Magic link copied! Share it with your family member via text or email.');
       
       setInvitations([invitation, ...invitations]);
       setShowInviteModal(false);
@@ -565,8 +565,18 @@ export default function Family() {
                   />
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
-                  A magic link will be generated for this email
+                  Enter the email address of your family member
                 </p>
+              </div>
+
+              <div className="bg-gray-800 rounded-lg p-4 space-y-2">
+                <p className="text-sm text-gray-300 font-medium">How it works:</p>
+                <ol className="text-xs text-gray-400 space-y-1 list-decimal list-inside">
+                  <li>A magic link will be generated for this invitation</li>
+                  <li>The link will be automatically copied to your clipboard</li>
+                  <li>Share the magic link by text or email with your family member</li>
+                  <li>They will click the link and follow the instructions to join your family</li>
+                </ol>
               </div>
 
               <div className="flex justify-end gap-3 pt-2">

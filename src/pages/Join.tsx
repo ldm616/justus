@@ -241,7 +241,7 @@ export default function Join() {
             {/* Profile Picture */}
             <div className="flex justify-center">
               <label className="relative group cursor-pointer">
-                <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden">
+                <div className="w-32 h-32 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden relative shadow-md">
                   {avatarPreview ? (
                     <img
                       src={avatarPreview}
@@ -249,7 +249,7 @@ export default function Join() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <Camera className="w-8 h-8 text-gray-400" />
+                    <Camera className="w-12 h-12 text-gray-400" />
                   )}
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
                     <Camera className="w-6 h-6 text-white" />
