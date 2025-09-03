@@ -27,6 +27,7 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
 
   const fetchPhotos = async () => {
     console.log('PhotoGrid: fetchPhotos called');
+    setLoading(true); // Force loading state to ensure re-render
     try {
       // Fetch photos with user profile information
       const { data, error } = await supabase
@@ -75,7 +76,16 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
 
   useEffect(() => {
     console.log('PhotoGrid: refreshTrigger changed to', refreshTrigger);
-    fetchPhotos();
+    if (refreshTrigger > 0) {
+      // Clear photos first to force React to re-render with new data
+      setPhotos([]);
+      // Small delay to ensure state clears
+      setTimeout(() => {
+        fetchPhotos();
+      }, 100);
+    } else {
+      fetchPhotos();
+    }
   }, [refreshTrigger]);
 
   useEffect(() => {
@@ -158,11 +168,11 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
           >
             <div className="aspect-square overflow-hidden bg-gray-900">
               <img
-                src={photo.thumbnail_url}
+                src={`${photo.thumbnail_url}${photo.thumbnail_url.includes('?') ? '&' : '?'}v=${refreshTrigger}`}
                 alt={`Photo by ${photo.username || 'User'}`}
                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
                 loading="lazy"
-                key={photo.thumbnail_url} // Force re-render when URL changes
+                key={`${photo.id}-${refreshTrigger}`} // Force re-render
               />
             </div>
           
