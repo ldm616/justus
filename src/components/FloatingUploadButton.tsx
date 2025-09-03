@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Plus, Loader2, X, Upload } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Plus, Loader2 } from 'lucide-react';
 import { usePhotoUpload } from '../hooks/usePhotoUpload';
 import { useToast } from '../contexts/ToastContext';
 
@@ -10,10 +10,6 @@ interface FloatingUploadButtonProps {
 
 export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday }: FloatingUploadButtonProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showCaptionModal, setShowCaptionModal] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [caption, setCaption] = useState('');
   const { uploading, uploadPhoto, canvasRef } = usePhotoUpload(onPhotoUploaded);
   const { showToast } = useToast();
 
@@ -31,37 +27,13 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
       return;
     }
 
-    // Create preview URL
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    setSelectedFile(file);
-    setShowCaptionModal(true);
+    // Process and upload immediately
+    await uploadPhoto(file);
     
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile) return;
-    
-    await uploadPhoto(selectedFile, caption.trim());
-    
-    // Clean up
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setShowCaptionModal(false);
-    setSelectedFile(null);
-    setPreviewUrl(null);
-    setCaption('');
-  };
-
-  const handleCancel = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setShowCaptionModal(false);
-    setSelectedFile(null);
-    setPreviewUrl(null);
-    setCaption('');
   };
 
   return (
@@ -94,77 +66,6 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
 
       {/* Hidden canvas for image processing */}
       <canvas ref={canvasRef} className="hidden" />
-
-      {/* Caption Modal */}
-      {showCaptionModal && previewUrl && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-900 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="p-4 border-b border-gray-800 flex items-center justify-between">
-              <h2 className="text-lg font-medium">Add Photo</h2>
-              <button
-                onClick={handleCancel}
-                className="text-gray-400 hover:text-white"
-                disabled={uploading}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            {/* Image Preview */}
-            <div className="p-4">
-              <img 
-                src={previewUrl} 
-                alt="Preview" 
-                className="w-full max-h-[40vh] object-contain rounded"
-              />
-            </div>
-            
-            {/* Caption Input */}
-            <div className="p-4 border-t border-gray-800">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Caption (optional)
-              </label>
-              <textarea
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                placeholder="Add a caption..."
-                className="w-full bg-gray-800 rounded-lg px-3 py-2 resize-none text-sm"
-                rows={3}
-                disabled={uploading}
-              />
-            </div>
-            
-            {/* Actions */}
-            <div className="p-4 border-t border-gray-800 flex gap-3 justify-end">
-              <button
-                onClick={handleCancel}
-                className="px-4 py-2 text-gray-300 hover:text-white"
-                disabled={uploading}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpload}
-                disabled={uploading}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 disabled:opacity-50"
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    Upload
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

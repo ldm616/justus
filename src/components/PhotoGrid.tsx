@@ -51,7 +51,6 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
           created_at,
           upload_date,
           family_id,
-          caption,
           profiles (
             username,
             avatar_url

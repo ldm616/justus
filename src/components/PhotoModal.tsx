@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, RefreshCw, Send, Edit2, Trash2, Tag, MessageCircle, Type } from 'lucide-react';
+import { X, RefreshCw, Send, Edit2, Trash2, Tag, MessageCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../contexts/UserContext';
 import { formatTimeAgo } from '../utils/timeFormat';
@@ -13,7 +13,6 @@ interface Photo {
   thumbnail_url: string;
   created_at: string;
   upload_date: string;
-  caption?: string | null;
   username?: string | null;
   avatar_url?: string | null;
 }
@@ -58,9 +57,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
   const [newTag, setNewTag] = useState('');
   const [loadingComments, setLoadingComments] = useState(true);
   const [submittingComment, setSubmittingComment] = useState(false);
-  const [editingCaption, setEditingCaption] = useState(false);
-  const [captionText, setCaptionText] = useState(photo.caption || '');
-  const [activeSection, setActiveSection] = useState<'caption' | 'comments' | 'tags' | null>('caption');
+  const [activeSection, setActiveSection] = useState<'comments' | 'tags' | null>('comments');
   const { profile } = useUser();
   const { showToast } = useToast();
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
@@ -69,7 +66,6 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
     if (photo) {
       loadComments();
       loadTags();
-      setCaptionText(photo.caption || '');
     }
   }, [photo, profile]);
 
@@ -245,27 +241,6 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
     }
   };
 
-  const handleUpdateCaption = async () => {
-    if (!profile || profile.id !== photo.user_id) return;
-    
-    try {
-      const { error } = await supabase
-        .from('photos')
-        .update({ caption: captionText.trim() || null })
-        .eq('id', photo.id);
-
-      if (error) throw error;
-      
-      // Update the photo object and state
-      photo.caption = captionText.trim() || null;
-      setCaptionText(captionText.trim());
-      setEditingCaption(false);
-      showToast('Caption updated');
-    } catch (err) {
-      console.error('Error updating caption:', err);
-      showToast('Failed to update caption');
-    }
-  };
 
   return (
     <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
@@ -292,17 +267,6 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
         {imageLoaded && (
           <div className="bg-gray-900 border-t border-gray-800">
             <div className="flex justify-around py-3">
-              {/* Caption Button */}
-              <button
-                onClick={() => setActiveSection(activeSection === 'caption' ? null : 'caption')}
-                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-                  activeSection === 'caption' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <Type className="w-5 h-5" />
-                <span className="text-xs">Caption</span>
-              </button>
-
               {/* Comments Button */}
               <button
                 onClick={() => setActiveSection(activeSection === 'comments' ? null : 'comments')}
@@ -364,65 +328,6 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
 
             {/* Dynamic Content Based on Active Section */}
             <div className="p-4">
-              {/* Caption Section */}
-              {activeSection === 'caption' && (
-                <div>
-                  {editingCaption ? (
-                    <div>
-                      <textarea
-                        value={captionText}
-                        onChange={(e) => setCaptionText(e.target.value)}
-                        className="w-full bg-gray-800 rounded px-3 py-2 text-sm resize-none"
-                        rows={3}
-                        placeholder="Add a caption..."
-                        autoFocus
-                      />
-                      <div className="flex gap-2 mt-2">
-                        <button
-                          onClick={handleUpdateCaption}
-                          className="text-xs bg-blue-600 px-3 py-1 rounded hover:bg-blue-700"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingCaption(false);
-                            setCaptionText(photo.caption || '');
-                          }}
-                          className="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      {captionText ? (
-                        <div className="flex items-start gap-2">
-                          <p className="text-sm flex-1">{captionText}</p>
-                          {profile?.id === photo.user_id && (
-                            <button
-                              onClick={() => setEditingCaption(true)}
-                              className="p-1 hover:bg-gray-800 rounded"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      ) : profile?.id === photo.user_id ? (
-                        <button
-                          onClick={() => setEditingCaption(true)}
-                          className="text-gray-400 hover:text-white text-sm"
-                        >
-                          Add a caption...
-                        </button>
-                      ) : (
-                        <p className="text-gray-400 text-sm">No caption</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Tags Section */}
               {activeSection === 'tags' && (
