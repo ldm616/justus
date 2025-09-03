@@ -484,9 +484,8 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                 </button>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
