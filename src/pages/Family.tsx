@@ -282,10 +282,17 @@ export default function Family() {
       // Generate magic link
       const magicLink = `${window.location.origin}/join?token=${invitation.invite_token}`;
       
-      // Copy to clipboard
-      await navigator.clipboard.writeText(magicLink);
-      setCopiedLink(invitation.id);
-      showToast('Magic link copied! Share it with your family member via text or email.');
+      // Try to copy to clipboard
+      try {
+        await navigator.clipboard.writeText(magicLink);
+        setCopiedLink(invitation.id);
+        showToast('Magic link copied! Share it with your family member via text or email.');
+      } catch (clipboardError) {
+        // Fallback for clipboard permission denied or not available
+        console.warn('Clipboard access denied, showing link in modal');
+        // Still add the invitation but show a different message
+        showToast('Invitation created! Copy the link from the invitations list below.');
+      }
       
       setInvitations([invitation, ...invitations]);
       setShowInviteModal(false);
@@ -506,10 +513,29 @@ export default function Family() {
                       <button
                         onClick={async () => {
                           const magicLink = `${window.location.origin}/join?token=${invite.invite_token}`;
-                          await navigator.clipboard.writeText(magicLink);
-                          setCopiedLink(invite.id);
-                          showToast('Magic link copied to clipboard!');
-                          setTimeout(() => setCopiedLink(null), 3000);
+                          try {
+                            await navigator.clipboard.writeText(magicLink);
+                            setCopiedLink(invite.id);
+                            showToast('Magic link copied to clipboard!');
+                            setTimeout(() => setCopiedLink(null), 3000);
+                          } catch (err) {
+                            // Fallback: select and copy manually
+                            const textArea = document.createElement('textarea');
+                            textArea.value = magicLink;
+                            textArea.style.position = 'fixed';
+                            textArea.style.opacity = '0';
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            try {
+                              document.execCommand('copy');
+                              setCopiedLink(invite.id);
+                              showToast('Magic link copied!');
+                              setTimeout(() => setCopiedLink(null), 3000);
+                            } catch {
+                              showToast('Could not copy link. Please copy manually: ' + magicLink);
+                            }
+                            document.body.removeChild(textArea);
+                          }
                         }}
                         className="btn-secondary text-sm flex items-center gap-2"
                       >
