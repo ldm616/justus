@@ -150,9 +150,20 @@ export function usePhotoUpload(onSuccess?: () => void) {
           thumbnail_url: existingPhoto.thumbnail_url
         };
 
-        // Update existing photo
+        // Update existing photo (replacement)
         console.log('Updating photo for date:', dateString);
         
+        // First delete all existing tags for this photo
+        const { error: deleteTagsError } = await supabase
+          .from('photo_tags')
+          .delete()
+          .eq('photo_id', existingPhoto.id);
+        
+        if (deleteTagsError) {
+          console.error('Error deleting old tags:', deleteTagsError);
+        }
+        
+        // Update photo with new image and clear caption
         const { data: updateData, error: updateError } = await supabase
           .from('photos')
           .update({
@@ -161,7 +172,7 @@ export function usePhotoUpload(onSuccess?: () => void) {
             thumbnail_url: thumbUrl,
             created_at: new Date().toISOString(),
             family_id: profile.familyId,
-            caption: caption || null
+            caption: caption || null  // Use new caption or null
           })
           .eq('user_id', profile.id)
           .eq('upload_date', dateString)
@@ -177,6 +188,21 @@ export function usePhotoUpload(onSuccess?: () => void) {
         if (!updateData || updateData.length === 0) {
           console.error('No rows updated - check RLS policies');
           throw new Error('Failed to update photo - no rows affected');
+        }
+        
+        // Add username auto-tag
+        if (updateData[0] && profile.username) {
+          const { error: tagError } = await supabase
+            .from('photo_tags')
+            .insert({
+              photo_id: updateData[0].id,
+              tag: `#${profile.username}`,
+              created_by: profile.id
+            });
+          
+          if (tagError) {
+            console.error('Error adding username tag:', tagError);
+          }
         }
 
         // Delete old files from storage
@@ -233,6 +259,21 @@ export function usePhotoUpload(onSuccess?: () => void) {
         if (insertError) {
           console.error('Insert error:', insertError);
           throw insertError;
+        }
+        
+        // Add username auto-tag for new photos
+        if (insertData && insertData[0] && profile.username) {
+          const { error: tagError } = await supabase
+            .from('photo_tags')
+            .insert({
+              photo_id: insertData[0].id,
+              tag: `#${profile.username}`,
+              created_by: profile.id
+            });
+          
+          if (tagError) {
+            console.error('Error adding username tag:', tagError);
+          }
         }
       }
 
