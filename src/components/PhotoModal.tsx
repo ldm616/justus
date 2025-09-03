@@ -13,6 +13,7 @@ interface Photo {
   thumbnail_url: string;
   created_at: string;
   upload_date: string;
+  caption?: string | null;
   username?: string | null;
   avatar_url?: string | null;
 }
@@ -61,6 +62,8 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
   const [familyMembers, setFamilyMembers] = useState<any[]>([]);
   const [loadingComments, setLoadingComments] = useState(true);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [editingCaption, setEditingCaption] = useState(false);
+  const [captionText, setCaptionText] = useState(photo.caption || '');
   const { profile } = useUser();
   const { showToast } = useToast();
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
@@ -263,124 +266,190 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
     setShowTagMenu(false);
   };
 
+  const handleUpdateCaption = async () => {
+    if (!profile || profile.id !== photo.user_id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('photos')
+        .update({ caption: captionText.trim() || null })
+        .eq('id', photo.id);
+
+      if (error) throw error;
+      
+      photo.caption = captionText.trim() || null;
+      setEditingCaption(false);
+      showToast('Caption updated');
+    } catch (err) {
+      console.error('Error updating caption:', err);
+      showToast('Failed to update caption');
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col md:flex-row">
-      {/* Image Section - 60% width on desktop, full width on mobile */}
-      <div 
-        className="w-full md:w-[60%] h-[60vh] md:h-full flex items-center justify-center relative bg-black cursor-pointer"
-        onClick={onClose}
-      >
-        <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+      <div className="w-full h-full overflow-y-auto">
+        <div className="max-w-4xl mx-auto">
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="fixed top-4 right-4 text-white hover:text-gray-300 z-10 bg-black/50 rounded-full p-2"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          {/* Image Section */}
+          <div className="relative bg-black flex items-center justify-center min-h-[50vh] md:min-h-[60vh]">
+            {profile && photo.user_id === profile.id && isToday && onReplace && (
+              <button
+                onClick={onReplace}
+                className="absolute bottom-4 right-4 bg-white/10 backdrop-blur hover:bg-white/20 text-white p-3 rounded-full transition-all z-10"
+                aria-label="Replace photo"
+                disabled={uploading}
+              >
+                <RefreshCw className={`w-6 h-6 ${uploading ? 'animate-spin' : ''}`} />
+              </button>
+            )}
+
+            <img
+              src={photo.medium_url || photo.photo_url}
+              alt={`Photo by ${photo.username || 'User'}`}
+              className="max-w-full max-h-[70vh] object-contain"
+              onLoad={() => setImageLoaded(true)}
+            />
+          </div>
+
+          {/* Content Section */}
           {imageLoaded && (
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 text-white hover:text-gray-300 z-10 bg-black/50 rounded-full p-2"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          )}
-
-          {imageLoaded && profile && photo.user_id === profile.id && isToday && onReplace && (
-            <button
-              onClick={onReplace}
-              className="absolute bottom-4 right-4 bg-white/10 backdrop-blur hover:bg-white/20 text-white p-3 rounded-full transition-all z-10"
-              aria-label="Replace photo"
-              disabled={uploading}
-            >
-              <RefreshCw className={`w-6 h-6 ${uploading ? 'animate-spin' : ''}`} />
-            </button>
-          )}
-
-          <img
-            src={photo.medium_url || photo.photo_url}
-            alt={`Photo by ${photo.username || 'User'}`}
-            className="max-w-full max-h-full object-contain"
-            onLoad={() => setImageLoaded(true)}
-          />
-        </div>
-      </div>
-
-      {/* Comments Section - 40% width on desktop, full width on mobile */}
-      {imageLoaded && (
-        <div className="w-full md:w-[40%] h-[40vh] md:h-full bg-gray-900 flex flex-col">
-            {/* Photo Info Header */}
-            <div className="px-2.5 py-4 border-b border-gray-800">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {photo.avatar_url ? (
-                    <img 
-                      src={photo.avatar_url} 
-                      alt={photo.username || 'User'}
-                      className="w-10 h-10 rounded-full"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-gray-700" />
-                  )}
-                  <div>
-                    <p className="font-medium">{photo.username || 'Anonymous'}</p>
-                    <p className="text-xs text-gray-400">{formatTimeAgo(photo.created_at)}</p>
+            <div className="bg-gray-900">
+              {/* Photo Info Header */}
+              <div className="px-4 py-4 border-b border-gray-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {photo.avatar_url ? (
+                      <img 
+                        src={photo.avatar_url} 
+                        alt={photo.username || 'User'}
+                        className="w-10 h-10 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gray-700" />
+                    )}
+                    <div>
+                      <p className="font-medium">{photo.username || 'Anonymous'}</p>
+                      <p className="text-xs text-gray-400">{formatTimeAgo(photo.created_at)}</p>
+                    </div>
                   </div>
+                  
+                  {profile?.id === photo.user_id && familyMembers.length > 0 && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowTagMenu(!showTagMenu)}
+                        className="p-2 hover:bg-gray-800 rounded-full"
+                      >
+                        <Tag className="w-5 h-5" />
+                      </button>
+                      
+                      {showTagMenu && (
+                        <div className="absolute right-0 top-10 bg-gray-800 rounded-lg shadow-xl p-2 w-48 z-20">
+                          <p className="text-xs text-gray-400 px-2 py-1">Tag family members</p>
+                          {familyMembers.map(member => {
+                            const isTagged = tags.some(t => t.tagged_user_id === member.id);
+                            return (
+                              <button
+                                key={member.id}
+                                onClick={() => handleToggleTag(member.id)}
+                                className="w-full flex items-center gap-2 p-2 hover:bg-gray-700 rounded text-left"
+                              >
+                                {member.avatar_url ? (
+                                  <img src={member.avatar_url} className="w-6 h-6 rounded-full" />
+                                ) : (
+                                  <div className="w-6 h-6 rounded-full bg-gray-600" />
+                                )}
+                                <span className="text-sm flex-1">{member.username}</span>
+                                {isTagged && <X className="w-4 h-4 text-gray-400" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                
-                {profile?.id === photo.user_id && familyMembers.length > 0 && (
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowTagMenu(!showTagMenu)}
-                      className="p-2 hover:bg-gray-800 rounded-full"
-                    >
-                      <Tag className="w-5 h-5" />
-                    </button>
-                    
-                    {showTagMenu && (
-                      <div className="absolute right-0 top-10 bg-gray-800 rounded-lg shadow-xl p-2 w-48 z-20">
-                        <p className="text-xs text-gray-400 px-2 py-1">Tag family members</p>
-                        {familyMembers.map(member => {
-                          const isTagged = tags.some(t => t.tagged_user_id === member.id);
-                          return (
-                            <button
-                              key={member.id}
-                              onClick={() => handleToggleTag(member.id)}
-                              className="w-full flex items-center gap-2 p-2 hover:bg-gray-700 rounded text-left"
-                            >
-                              {member.avatar_url ? (
-                                <img src={member.avatar_url} className="w-6 h-6 rounded-full" />
-                              ) : (
-                                <div className="w-6 h-6 rounded-full bg-gray-600" />
-                              )}
-                              <span className="text-sm flex-1">{member.username}</span>
-                              {isTagged && <X className="w-4 h-4 text-gray-400" />}
-                            </button>
-                          );
-                        })}
+
+                {/* Caption */}
+                {(photo.caption || profile?.id === photo.user_id) && (
+                  <div className="mt-3">
+                    {editingCaption ? (
+                      <div>
+                        <textarea
+                          value={captionText}
+                          onChange={(e) => setCaptionText(e.target.value)}
+                          className="w-full bg-gray-800 rounded px-3 py-2 text-sm resize-none"
+                          rows={2}
+                          placeholder="Add a caption..."
+                          autoFocus
+                        />
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={handleUpdateCaption}
+                            className="text-xs bg-blue-600 px-3 py-1 rounded hover:bg-blue-700"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingCaption(false);
+                              setCaptionText(photo.caption || '');
+                            }}
+                            className="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-2">
+                        <p className="text-sm flex-1">{photo.caption}</p>
+                        {profile?.id === photo.user_id && (
+                          <button
+                            onClick={() => setEditingCaption(true)}
+                            className="p-1 hover:bg-gray-800 rounded"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
                 )}
+
+                {/* Tags Display */}
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {tags.map(tag => (
+                      <span key={tag.id} className="text-xs bg-gray-800 px-2 py-1 rounded">
+                        @{tag.profiles?.username}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Tags Display */}
-              {tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {tags.map(tag => (
-                    <span key={tag.id} className="text-xs bg-gray-800 px-2 py-1 rounded">
-                      @{tag.profiles?.username}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Comments List */}
-            <div className="flex-1 overflow-y-auto px-2.5 py-4 space-y-4">
-              {loadingComments ? (
-                <div className="text-center py-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto" />
-                </div>
-              ) : comments.length === 0 ? (
-                <p className="text-gray-400 text-center py-8">No comments yet</p>
-              ) : (
-                comments.map(comment => (
-                  <div key={comment.id} className="flex gap-3">
+              {/* Comments Section */}
+              <div className="px-4 py-4">
+                <h3 className="text-sm font-medium text-gray-400 mb-4">Comments</h3>
+                
+                {loadingComments ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto" />
+                  </div>
+                ) : comments.length === 0 ? (
+                  <p className="text-gray-400 text-center py-8">No comments yet</p>
+                ) : (
+                  <div className="space-y-4">
+                    {comments.map(comment => (
+                      <div key={comment.id} className="flex gap-3">
                     {comment.profiles?.avatar_url ? (
                       <img 
                         src={comment.profiles.avatar_url}
@@ -452,40 +521,43 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                       ) : (
                         <p className="text-sm mt-1">{comment.comment}</p>
                       )}
+                      </div>
                     </div>
+                  ))}
                   </div>
-                ))
-              )}
-            </div>
-
-            {/* Add Comment */}
-            <div className="px-2.5 py-4 border-t border-gray-800">
-              <div className="flex gap-2">
-                <textarea
-                  ref={commentInputRef}
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleAddComment();
-                    }
-                  }}
-                  placeholder="Add a comment..."
-                  className="flex-1 bg-gray-800 rounded-lg px-3 py-2 resize-none text-sm"
-                  rows={1}
-                />
-                <button
-                  onClick={handleAddComment}
-                  disabled={!newComment.trim() || submittingComment}
-                  className="p-2 bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
+                )}
+                
+                {/* Add Comment */}
+                <div className="mt-6 pt-4 border-t border-gray-800">
+                  <div className="flex gap-2">
+                    <textarea
+                      ref={commentInputRef}
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleAddComment();
+                        }
+                      }}
+                      placeholder="Add a comment..."
+                      className="flex-1 bg-gray-800 rounded-lg px-3 py-2 resize-none text-sm"
+                      rows={1}
+                    />
+                    <button
+                      onClick={handleAddComment}
+                      disabled={!newComment.trim() || submittingComment}
+                      className="p-2 bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Send className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

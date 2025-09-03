@@ -69,7 +69,7 @@ export function usePhotoUpload(onSuccess?: () => void) {
     });
   };
 
-  const uploadPhoto = async (file: File) => {
+  const uploadPhoto = async (file: File, caption?: string) => {
     if (!file || !profile || !canvasRef.current) return;
 
     setUploading(true);
@@ -160,7 +160,8 @@ export function usePhotoUpload(onSuccess?: () => void) {
             medium_url: mediumUrl,
             thumbnail_url: thumbUrl,
             created_at: new Date().toISOString(),
-            family_id: profile.familyId
+            family_id: profile.familyId,
+            caption: caption || null
           })
           .eq('user_id', profile.id)
           .eq('upload_date', dateString)
@@ -222,7 +223,8 @@ export function usePhotoUpload(onSuccess?: () => void) {
             thumbnail_url: thumbUrl,
             upload_date: dateString,
             created_at: new Date().toISOString(),
-            family_id: profile.familyId
+            family_id: profile.familyId,
+            caption: caption || null
           })
           .select();
 
