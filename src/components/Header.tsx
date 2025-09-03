@@ -70,7 +70,7 @@ export default function Header() {
           >
             <span className="font-bold text-[22px]">JustUs</span>
             {familyName && (
-              <span className="text-[18px] font-normal">: The {familyName} Family</span>
+              <span className="text-[18px] font-normal">: {familyName}</span>
             )}
           </Link>
         ) : isAuthPage ? (
