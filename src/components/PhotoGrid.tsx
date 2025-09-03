@@ -168,11 +168,11 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
           >
             <div className="aspect-square overflow-hidden bg-gray-900">
               <img
-                src={`${photo.thumbnail_url}${photo.thumbnail_url.includes('?') ? '&' : '?'}v=${refreshTrigger || 0}`}
+                src={photo.thumbnail_url}
                 alt={`Photo by ${photo.username || 'User'}`}
                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
                 loading="lazy"
-                key={`${photo.id}-${refreshTrigger || 0}`} // Force re-render
+                key={photo.id}
               />
             </div>
           

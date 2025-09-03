@@ -115,23 +115,23 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
       // Crop and resize the image
       const { full, medium, thumbnail } = await cropAndResizeImage(selectedFile);
 
-      // Generate filenames - use date-based naming for replaceability
+      // Generate filenames with timestamp to ensure uniqueness
       const today = new Date();
       const year = today.getFullYear();
       const month = String(today.getMonth() + 1).padStart(2, '0');
       const day = String(today.getDate()).padStart(2, '0');
       const dateString = `${year}-${month}-${day}`;
+      const timestamp = Date.now();
       
-      const fullFileName = `${profile.id}/${dateString}_full.jpg`;
-      const mediumFileName = `${profile.id}/${dateString}_medium.jpg`;
-      const thumbFileName = `${profile.id}/${dateString}_thumb.jpg`;
+      const fullFileName = `${profile.id}/${dateString}_${timestamp}_full.jpg`;
+      const mediumFileName = `${profile.id}/${dateString}_${timestamp}_medium.jpg`;
+      const thumbFileName = `${profile.id}/${dateString}_${timestamp}_thumb.jpg`;
 
       // Upload full size image
       const { error: fullError } = await supabase.storage
         .from('photos')
         .upload(fullFileName, full, {
-          cacheControl: '31536000',
-          upsert: true // Always allow overwrite for same-day photos
+          cacheControl: '31536000'
         });
 
       if (fullError) throw fullError;
@@ -140,8 +140,7 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
       const { error: mediumError } = await supabase.storage
         .from('photos')
         .upload(mediumFileName, medium, {
-          cacheControl: '31536000',
-          upsert: true
+          cacheControl: '31536000'
         });
 
       if (mediumError) throw mediumError;
@@ -150,14 +149,12 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
       const { error: thumbError } = await supabase.storage
         .from('photos')
         .upload(thumbFileName, thumbnail, {
-          cacheControl: '31536000',
-          upsert: true
+          cacheControl: '31536000'
         });
 
       if (thumbError) throw thumbError;
 
-      // Get public URLs with cache busting
-      const cacheBuster = Date.now();
+      // Get public URLs
       const { data: { publicUrl: fullUrl } } = supabase.storage
         .from('photos')
         .getPublicUrl(fullFileName);
@@ -169,11 +166,6 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
       const { data: { publicUrl: thumbUrl } } = supabase.storage
         .from('photos')
         .getPublicUrl(thumbFileName);
-      
-      // Add cache buster to URLs
-      const fullUrlWithCache = `${fullUrl}?t=${cacheBuster}`;
-      const mediumUrlWithCache = `${mediumUrl}?t=${cacheBuster}`;
-      const thumbUrlWithCache = `${thumbUrl}?t=${cacheBuster}`;
 
       // Check if photo exists for today
       console.log('Checking for existing photo with:', { user_id: profile.id, upload_date: dateString });
@@ -187,20 +179,27 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
       console.log('Existing photo check result:', { existingPhoto, checkError });
 
       if (existingPhoto) {
-        // Update existing photo
+        // Get the old photo data to delete old files
+        const { data: oldPhoto } = await supabase
+          .from('photos')
+          .select('photo_url, medium_url, thumbnail_url')
+          .eq('id', existingPhoto.id)
+          .single();
+
+        // Update existing photo with new URLs
         console.log('Updating existing photo with ID:', existingPhoto.id);
         console.log('New URLs:', {
-          photo_url: fullUrlWithCache,
-          medium_url: mediumUrlWithCache,
-          thumbnail_url: thumbUrlWithCache
+          photo_url: fullUrl,
+          medium_url: mediumUrl,
+          thumbnail_url: thumbUrl
         });
         
         const { data: updateData, error: updateError } = await supabase
           .from('photos')
           .update({
-            photo_url: fullUrlWithCache,
-            medium_url: mediumUrlWithCache,
-            thumbnail_url: thumbUrlWithCache,
+            photo_url: fullUrl,
+            medium_url: mediumUrl,
+            thumbnail_url: thumbUrl,
             created_at: new Date().toISOString()
           })
           .eq('id', existingPhoto.id)
@@ -212,6 +211,39 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
           console.error('Update error:', updateError);
           throw updateError;
         }
+
+        // Delete old files from storage
+        if (oldPhoto) {
+          console.log('Deleting old files from storage...');
+          const oldFiles = [];
+          
+          // Extract file paths from URLs
+          if (oldPhoto.photo_url) {
+            const match = oldPhoto.photo_url.match(/photos\/(.+?)(?:\?|$)/);
+            if (match) oldFiles.push(match[1]);
+          }
+          if (oldPhoto.medium_url) {
+            const match = oldPhoto.medium_url.match(/photos\/(.+?)(?:\?|$)/);
+            if (match) oldFiles.push(match[1]);
+          }
+          if (oldPhoto.thumbnail_url) {
+            const match = oldPhoto.thumbnail_url.match(/photos\/(.+?)(?:\?|$)/);
+            if (match) oldFiles.push(match[1]);
+          }
+
+          if (oldFiles.length > 0) {
+            const { error: deleteError } = await supabase.storage
+              .from('photos')
+              .remove(oldFiles);
+            
+            if (deleteError) {
+              console.error('Error deleting old files:', deleteError);
+              // Don't throw, as the upload succeeded
+            } else {
+              console.log('Old files deleted successfully');
+            }
+          }
+        }
       } else {
         // Insert new photo
         console.log('Inserting new photo for date:', dateString);
@@ -219,9 +251,9 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
           .from('photos')
           .insert({
             user_id: profile.id,
-            photo_url: fullUrlWithCache,
-            medium_url: mediumUrlWithCache,
-            thumbnail_url: thumbUrlWithCache,
+            photo_url: fullUrl,
+            medium_url: mediumUrl,
+            thumbnail_url: thumbUrl,
             upload_date: dateString,
             created_at: new Date().toISOString()
           })
