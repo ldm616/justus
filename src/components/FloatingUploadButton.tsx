@@ -195,8 +195,8 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
           thumbnail_url: thumbUrl
         });
         
-        // Try updating by both id AND user_id for extra safety
-        console.log('Attempting update with id:', existingPhoto.id, 'and user_id:', profile.id);
+        // Update existing photo
+        console.log('Updating photo for date:', dateString);
         
         const { data: updateData, error: updateError } = await supabase
           .from('photos')
@@ -210,48 +210,16 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
           .eq('upload_date', dateString)
           .select();
 
-        console.log('Update result:', { updateData, updateError, rowsAffected: updateData?.length });
+        console.log('Update result:', { updateData, updateError });
         
         if (updateError) {
           console.error('Update error:', updateError);
           throw updateError;
         }
         
-        // If update didn't work, try deleting and re-inserting
         if (!updateData || updateData.length === 0) {
-          console.warn('Update returned no rows, trying delete and insert approach...');
-          
-          // Delete the existing record
-          const { error: deleteError } = await supabase
-            .from('photos')
-            .delete()
-            .eq('user_id', profile.id)
-            .eq('upload_date', dateString);
-          
-          if (deleteError) {
-            console.error('Delete error:', deleteError);
-            throw deleteError;
-          }
-          
-          // Insert new record
-          const { data: insertData, error: insertError } = await supabase
-            .from('photos')
-            .insert({
-              user_id: profile.id,
-              photo_url: fullUrl,
-              medium_url: mediumUrl,
-              thumbnail_url: thumbUrl,
-              upload_date: dateString,
-              created_at: new Date().toISOString()
-            })
-            .select();
-          
-          if (insertError) {
-            console.error('Insert after delete error:', insertError);
-            throw insertError;
-          }
-          
-          console.log('Successfully replaced via delete+insert:', insertData);
+          console.error('No rows updated - check RLS policies');
+          throw new Error('Failed to update photo - no rows affected');
         }
 
         // Delete old files from storage
