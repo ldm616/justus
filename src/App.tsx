@@ -10,6 +10,7 @@ import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
 import Family from './pages/Family';
+import Join from './pages/Join';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
@@ -57,6 +58,7 @@ export default function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/join" element={<Join />} />
               <Route path="/" element={
                 <Home />
               } />

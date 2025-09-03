@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Mail, Lock, Plus, Trash2, X, Check, Edit2 } from 'lucide-react';
+import { Users, Mail, Plus, Trash2, X, Check, Edit2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../contexts/UserContext';
 import { useToast } from '../contexts/ToastContext';
@@ -19,9 +19,10 @@ interface FamilyMember {
 interface FamilyInvitation {
   id: string;
   email: string;
-  temp_password: string;
+  invite_token?: string;
   used: boolean;
   created_at: string;
+  accepted_at?: string;
 }
 
 interface Family {
@@ -38,9 +39,9 @@ export default function Family() {
   const [invitations, setInvitations] = useState<FamilyInvitation[]>([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteTempPassword, setInviteTempPassword] = useState('');
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const navigate = useNavigate();
   const { profile, updateProfile } = useUser();
   const { showToast } = useToast();
@@ -254,18 +255,9 @@ export default function Family() {
     }
   };
 
-  const generateTempPassword = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-    let password = '';
-    for (let i = 0; i < 8; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setInviteTempPassword(password);
-  };
-
   const sendInvitation = async () => {
-    if (!inviteEmail || !inviteTempPassword) {
-      showToast('Please enter email and temporary password');
+    if (!inviteEmail) {
+      showToast('Please enter an email address');
       return;
     }
 
@@ -275,13 +267,12 @@ export default function Family() {
     }
 
     try {
-      // Create invitation record
+      // Create invitation record with auto-generated token
       const { data: invitation, error: inviteError } = await supabase
         .from('family_invitations')
         .insert({
           family_id: family?.id,
           email: inviteEmail.toLowerCase().trim(),
-          temp_password: inviteTempPassword,
           invited_by: profile?.id
         })
         .select()
@@ -289,14 +280,20 @@ export default function Family() {
 
       if (inviteError) throw inviteError;
 
-      // Here you would normally send an email
-      // For now, we'll just show the invite details
-      showToast(`Invitation created for ${inviteEmail}`);
+      // Generate magic link
+      const magicLink = `${window.location.origin}/join?token=${invitation.invite_token}`;
+      
+      // Copy to clipboard
+      await navigator.clipboard.writeText(magicLink);
+      setCopiedLink(invitation.id);
+      showToast('Magic link copied to clipboard!');
       
       setInvitations([invitation, ...invitations]);
       setShowInviteModal(false);
       setInviteEmail('');
-      setInviteTempPassword('');
+      
+      // Reset copied state after 3 seconds
+      setTimeout(() => setCopiedLink(null), 3000);
     } catch (err: any) {
       console.error('Error sending invitation:', err);
       showToast(err.message || 'Failed to send invitation');
@@ -436,10 +433,7 @@ export default function Family() {
             
             {isAdmin && members.length < 11 && (
               <button
-                onClick={() => {
-                  generateTempPassword();
-                  setShowInviteModal(true);
-                }}
+                onClick={() => setShowInviteModal(true)}
                 className="btn-primary flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
@@ -491,19 +485,32 @@ export default function Family() {
 
         {isAdmin && invitations.length > 0 && (
           <div className="card p-6">
-            <h2 className="text-lg font-semibold mb-4">Pending Invitations</h2>
+            <h2 className="text-lg font-semibold mb-2">Pending Invitations</h2>
+            <p className="text-sm text-gray-400 mb-4">
+              Click to copy the magic link for each invitation:
+            </p>
             <div className="space-y-3">
               {invitations.map((invite) => (
                 <div
                   key={invite.id}
-                  className="flex items-center justify-between p-3 bg-gray-800 rounded-lg"
+                  className="p-4 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-750 transition-colors"
+                  onClick={async () => {
+                    const magicLink = `${window.location.origin}/join?token=${invite.invite_token}`;
+                    await navigator.clipboard.writeText(magicLink);
+                    setCopiedLink(invite.id);
+                    showToast('Magic link copied!');
+                    setTimeout(() => setCopiedLink(null), 3000);
+                  }}
                 >
-                  <div>
+                  <div className="flex items-center justify-between">
                     <p className="font-medium">{invite.email}</p>
-                    <p className="text-sm text-gray-400">
-                      Password: {invite.temp_password}
-                    </p>
+                    {copiedLink === invite.id && (
+                      <span className="text-xs text-green-500">Copied!</span>
+                    )}
                   </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Click to copy invitation link
+                  </p>
                 </div>
               ))}
             </div>
@@ -538,34 +545,11 @@ export default function Family() {
                     onChange={(e) => setInviteEmail(e.target.value)}
                     placeholder="family@example.com"
                     className="form-input pl-10"
+                    autoFocus
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Temporary Password
-                </label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="text"
-                      value={inviteTempPassword}
-                      onChange={(e) => setInviteTempPassword(e.target.value)}
-                      placeholder="Enter temporary password"
-                      className="form-input pl-10"
-                    />
-                  </div>
-                  <button
-                    onClick={generateTempPassword}
-                    className="btn-secondary"
-                  >
-                    Generate
-                  </button>
-                </div>
                 <p className="text-xs text-gray-400 mt-1">
-                  The invited member will need to change this on first login
+                  A magic link will be generated for this email
                 </p>
               </div>
 
@@ -578,10 +562,10 @@ export default function Family() {
                 </button>
                 <button
                   onClick={sendInvitation}
-                  disabled={!inviteEmail || !inviteTempPassword}
+                  disabled={!inviteEmail}
                   className="btn-primary"
                 >
-                  Send Invitation
+                  Create Invitation
                 </button>
               </div>
             </div>
