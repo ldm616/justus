@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { User, ArrowLeft, LogIn } from 'lucide-react';
+import { User, ArrowLeft, LogIn, Home } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
 import { supabase } from '../lib/supabaseClient';
 
@@ -11,6 +11,7 @@ export default function Header() {
   const navigate = useNavigate();
   const isHomePage = location.pathname === '/';
   const isAuthPage = location.pathname === '/login';
+  const isProfilePage = location.pathname === '/profile';
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -39,6 +40,14 @@ export default function Header() {
           </Link>
         ) : isAuthPage ? (
           <div /> // Empty div to maintain layout
+        ) : isProfilePage ? (
+          <button
+            onClick={() => navigate('/')}
+            className="text-white font-medium flex items-center"
+            aria-label="Go home"
+          >
+            <Home className="w-5 h-5" />
+          </button>
         ) : (
           <button
             onClick={() => navigate(-1)}
