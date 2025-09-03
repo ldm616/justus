@@ -101,7 +101,7 @@ const Login: React.FC = () => {
             JustUs
           </h1>
           <p className="text-gray-400">
-            Share moments with your family
+            Share one photo a day with your family
           </p>
         </div>
 

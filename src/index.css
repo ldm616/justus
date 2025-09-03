@@ -68,7 +68,7 @@
   
   /* Form input styles */
   .form-input {
-    @apply w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-blue-500;
+    @apply w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-white/50;
   }
   
   /* Card styles */
