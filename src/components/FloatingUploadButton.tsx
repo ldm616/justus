@@ -156,7 +156,8 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
 
       if (thumbError) throw thumbError;
 
-      // Get public URLs
+      // Get public URLs with cache busting
+      const cacheBuster = Date.now();
       const { data: { publicUrl: fullUrl } } = supabase.storage
         .from('photos')
         .getPublicUrl(fullFileName);
@@ -168,6 +169,11 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
       const { data: { publicUrl: thumbUrl } } = supabase.storage
         .from('photos')
         .getPublicUrl(thumbFileName);
+      
+      // Add cache buster to URLs
+      const fullUrlWithCache = `${fullUrl}?t=${cacheBuster}`;
+      const mediumUrlWithCache = `${mediumUrl}?t=${cacheBuster}`;
+      const thumbUrlWithCache = `${thumbUrl}?t=${cacheBuster}`;
 
       // Check if photo exists for today
       const { data: existingPhoto } = await supabase
@@ -182,9 +188,9 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
         const { error: updateError } = await supabase
           .from('photos')
           .update({
-            photo_url: fullUrl,
-            medium_url: mediumUrl,
-            thumbnail_url: thumbUrl,
+            photo_url: fullUrlWithCache,
+            medium_url: mediumUrlWithCache,
+            thumbnail_url: thumbUrlWithCache,
             created_at: new Date().toISOString()
           })
           .eq('id', existingPhoto.id);
@@ -199,9 +205,9 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
           .from('photos')
           .insert({
             user_id: profile.id,
-            photo_url: fullUrl,
-            medium_url: mediumUrl,
-            thumbnail_url: thumbUrl,
+            photo_url: fullUrlWithCache,
+            medium_url: mediumUrlWithCache,
+            thumbnail_url: thumbUrlWithCache,
             upload_date: dateString,
             created_at: new Date().toISOString()
           });

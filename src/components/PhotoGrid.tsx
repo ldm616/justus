@@ -157,6 +157,7 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
                 alt={`Photo by ${photo.username || 'User'}`}
                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
                 loading="lazy"
+                key={photo.thumbnail_url} // Force re-render when URL changes
               />
             </div>
           
@@ -211,6 +212,7 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
                 alt={`Photo by ${selectedPhoto.username || 'User'}`}
                 className="w-full h-auto max-h-[98vh] object-contain"
                 onClick={(e) => e.stopPropagation()}
+                key={selectedPhoto.medium_url || selectedPhoto.photo_url} // Force re-render
               />
               
               {/* Photo info overlay */}
