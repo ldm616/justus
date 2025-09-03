@@ -297,7 +297,7 @@ function Profile() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate('/login');
+    navigate('/');
   };
 
   if (loading) {

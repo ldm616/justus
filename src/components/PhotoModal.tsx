@@ -264,11 +264,11 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
-      <div className="flex flex-col md:flex-row h-full w-full max-w-7xl mx-auto md:p-8">
+    <div className="fixed inset-0 bg-black z-50 flex items-center justify-center p-4 md:p-8">
+      <div className="flex flex-col md:flex-row w-full h-full max-w-7xl mx-auto gap-0 md:gap-4">
         {/* Image Section */}
         <div 
-          className="flex-1 flex items-center justify-center relative bg-black cursor-pointer overflow-hidden"
+          className="flex-1 flex items-center justify-center relative bg-black cursor-pointer min-h-0 md:rounded-l-lg"
           onClick={onClose}
         >
           <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
@@ -295,7 +295,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
             <img
               src={photo.medium_url || photo.photo_url}
               alt={`Photo by ${photo.username || 'User'}`}
-              className="w-full h-full object-contain"
+              className="max-w-full max-h-full object-contain"
               onLoad={() => setImageLoaded(true)}
             />
           </div>
@@ -303,7 +303,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
 
         {/* Comments Section */}
         {imageLoaded && (
-          <div className="w-full md:w-96 bg-gray-900 flex flex-col h-full md:h-auto">
+          <div className="w-full md:w-96 bg-gray-900 flex flex-col h-full overflow-hidden md:rounded-r-lg">
             {/* Photo Info Header */}
             <div className="p-4 border-b border-gray-800">
               <div className="flex items-center justify-between">
