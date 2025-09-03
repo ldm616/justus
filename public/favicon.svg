@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Circle background with indigo-600 color -->
-  <circle cx="16" cy="16" r="16" fill="#4f46e5"/>
+  <!-- Circle background with black color -->
+  <circle cx="16" cy="16" r="16" fill="#000000"/>
   
   <!-- Camera icon in white, centered and scaled -->
   <g transform="translate(16, 16)">
