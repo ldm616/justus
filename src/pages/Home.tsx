@@ -71,19 +71,27 @@ export default function Home() {
   // Show landing page for anonymous users
   if (isLoggedIn === false) {
     return (
-      <div className="min-h-screen pt-[60px] md:pt-12 pb-16 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center px-4">
           <div className="flex justify-center mb-6">
             <AppIcon size={80} />
           </div>
           <h1 className="text-4xl font-bold text-white mb-3">JustUs</h1>
           <p className="text-xl text-gray-400 mb-8">Share one photo a day with your family</p>
-          <Link 
-            to="/login"
-            className="btn-primary inline-block px-8 py-3 text-lg"
-          >
-            Get started
-          </Link>
+          <div className="flex gap-4 justify-center">
+            <Link 
+              to="/login"
+              className="btn-secondary px-8 py-3 text-lg"
+            >
+              Log in
+            </Link>
+            <Link 
+              to="/login?signup=true"
+              className="btn-primary px-8 py-3 text-lg"
+            >
+              Sign up
+            </Link>
+          </div>
         </div>
       </div>
     );

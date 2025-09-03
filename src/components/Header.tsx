@@ -12,6 +12,7 @@ export default function Header() {
   const isHomePage = location.pathname === '/';
   const isAuthPage = location.pathname === '/login' || location.pathname === '/join' || location.pathname === '/reset-password';
   const isProfilePage = location.pathname === '/profile';
+  const isAnonHomePage = isHomePage && !currentUser;
 
   React.useEffect(() => {
     // Get initial session
@@ -49,6 +50,11 @@ export default function Header() {
     }
   };
 
+
+  // Hide header on anonymous home page
+  if (isAnonHomePage) {
+    return null;
+  }
 
   return (
     <header className="header-primary fixed top-0 left-0 right-0 z-50">
