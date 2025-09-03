@@ -109,6 +109,7 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
 
     setUploading(true);
     setError(null);
+    console.log('Starting upload process...');
 
     try {
       // Crop and resize the image
@@ -168,23 +169,51 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
         .from('photos')
         .getPublicUrl(thumbFileName);
 
-      // Use upsert to either insert or update today's photo
-      const { error: upsertError } = await supabase
+      // Check if photo exists for today
+      const { data: existingPhoto } = await supabase
         .from('photos')
-        .upsert({
-          user_id: profile.id,
-          photo_url: fullUrl,
-          medium_url: mediumUrl,
-          thumbnail_url: thumbUrl,
-          upload_date: dateString,
-          created_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,upload_date' // Upsert based on unique constraint
-        });
+        .select('id')
+        .eq('user_id', profile.id)
+        .eq('upload_date', dateString)
+        .single();
 
-      if (upsertError) throw upsertError;
+      if (existingPhoto) {
+        // Update existing photo
+        const { error: updateError } = await supabase
+          .from('photos')
+          .update({
+            photo_url: fullUrl,
+            medium_url: mediumUrl,
+            thumbnail_url: thumbUrl,
+            created_at: new Date().toISOString()
+          })
+          .eq('id', existingPhoto.id);
+
+        if (updateError) {
+          console.error('Update error:', updateError);
+          throw updateError;
+        }
+      } else {
+        // Insert new photo
+        const { error: insertError } = await supabase
+          .from('photos')
+          .insert({
+            user_id: profile.id,
+            photo_url: fullUrl,
+            medium_url: mediumUrl,
+            thumbnail_url: thumbUrl,
+            upload_date: dateString,
+            created_at: new Date().toISOString()
+          });
+
+        if (insertError) {
+          console.error('Insert error:', insertError);
+          throw insertError;
+        }
+      }
 
       // Success!
+      console.log('Upload successful!');
       onPhotoUploaded();
       setShowModal(false);
       setSelectedFile(null);
