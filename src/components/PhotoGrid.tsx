@@ -76,7 +76,7 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
 
   useEffect(() => {
     console.log('PhotoGrid: refreshTrigger changed to', refreshTrigger);
-    if (refreshTrigger > 0) {
+    if (refreshTrigger && refreshTrigger > 0) {
       // Clear photos first to force React to re-render with new data
       setPhotos([]);
       // Small delay to ensure state clears
@@ -168,11 +168,11 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
           >
             <div className="aspect-square overflow-hidden bg-gray-900">
               <img
-                src={`${photo.thumbnail_url}${photo.thumbnail_url.includes('?') ? '&' : '?'}v=${refreshTrigger}`}
+                src={`${photo.thumbnail_url}${photo.thumbnail_url.includes('?') ? '&' : '?'}v=${refreshTrigger || 0}`}
                 alt={`Photo by ${photo.username || 'User'}`}
                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
                 loading="lazy"
-                key={`${photo.id}-${refreshTrigger}`} // Force re-render
+                key={`${photo.id}-${refreshTrigger || 0}`} // Force re-render
               />
             </div>
           
