@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Mail, Plus, Trash2, X, Check, Edit2 } from 'lucide-react';
+import { Users, Mail, Plus, Trash2, X, Check, Edit2, Copy } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../contexts/UserContext';
 import { useToast } from '../contexts/ToastContext';
@@ -141,13 +141,12 @@ export default function Family() {
         
         setIsAdmin(currentUserMember?.role === 'admin' || familyData.created_by === profile.id);
 
-        // Load invitations if admin
+        // Load invitations if admin (show all, not just pending)
         if (currentUserMember?.role === 'admin' || familyData.created_by === profile.id) {
           const { data: invitesData, error: invitesError } = await supabase
             .from('family_invitations')
             .select('*')
             .eq('family_id', familyId)
-            .eq('used', false)
             .order('created_at', { ascending: false });
 
           if (invitesError) throw invitesError;
@@ -485,32 +484,49 @@ export default function Family() {
 
         {isAdmin && invitations.length > 0 && (
           <div className="card p-6">
-            <h2 className="text-lg font-semibold mb-2">Pending Invitations</h2>
-            <p className="text-sm text-gray-400 mb-4">
-              Click to copy the magic link for each invitation:
-            </p>
+            <h2 className="text-lg font-semibold mb-4">Invitations</h2>
             <div className="space-y-3">
               {invitations.map((invite) => (
                 <div
                   key={invite.id}
-                  className="p-4 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-750 transition-colors"
-                  onClick={async () => {
-                    const magicLink = `${window.location.origin}/join?token=${invite.invite_token}`;
-                    await navigator.clipboard.writeText(magicLink);
-                    setCopiedLink(invite.id);
-                    showToast('Magic link copied!');
-                    setTimeout(() => setCopiedLink(null), 3000);
-                  }}
+                  className="p-4 bg-gray-800 rounded-lg"
                 >
                   <div className="flex items-center justify-between">
-                    <p className="font-medium">{invite.email}</p>
-                    {copiedLink === invite.id && (
-                      <span className="text-xs text-green-500">Copied!</span>
+                    <div>
+                      <p className="font-medium">{invite.email}</p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Status: {invite.accepted_at ? (
+                          <span className="text-green-500">Member Joined</span>
+                        ) : (
+                          <span className="text-yellow-500">Link Sent</span>
+                        )}
+                      </p>
+                    </div>
+                    {!invite.accepted_at && (
+                      <button
+                        onClick={async () => {
+                          const magicLink = `${window.location.origin}/join?token=${invite.invite_token}`;
+                          await navigator.clipboard.writeText(magicLink);
+                          setCopiedLink(invite.id);
+                          showToast('Magic link copied to clipboard!');
+                          setTimeout(() => setCopiedLink(null), 3000);
+                        }}
+                        className="btn-secondary text-sm flex items-center gap-2"
+                      >
+                        {copiedLink === invite.id ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" />
+                            Copy Link
+                          </>
+                        )}
+                      </button>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Click to copy invitation link
-                  </p>
                 </div>
               ))}
             </div>
