@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../contexts/UserContext';
-import { X } from 'lucide-react';
+import { usePhotoUpload } from '../hooks/usePhotoUpload';
+import { X, RefreshCw } from 'lucide-react';
 
 interface Photo {
   id: string;
@@ -23,7 +24,14 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { profile } = useUser();
+  
+  // Use the shared upload hook with callback to refresh grid
+  const { uploading, uploadPhoto, canvasRef } = usePhotoUpload(() => {
+    setSelectedPhoto(null);
+    fetchPhotos();
+  });
 
   const fetchPhotos = async () => {
     console.log('PhotoGrid: fetchPhotos called');
@@ -115,6 +123,14 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
       subscription.unsubscribe();
     };
   }, []);
+
+  const isToday = (dateString: string) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date.getTime() === today.getTime();
+  };
 
   const formatDate = (dateString: string) => {
     // Parse the upload_date which is in YYYY-MM-DD format
@@ -228,6 +244,21 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
               <X className="w-8 h-8" />
             </button>
 
+            {/* Replace button - only show if it's the user's photo and today */}
+            {profile && selectedPhoto.user_id === profile.id && isToday(selectedPhoto.upload_date) && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
+                className="absolute bottom-4 right-4 bg-white/10 backdrop-blur hover:bg-white/20 text-white p-3 rounded-full transition-all z-10"
+                aria-label="Replace photo"
+                disabled={uploading}
+              >
+                <RefreshCw className={`w-6 h-6 ${uploading ? 'animate-spin' : ''}`} />
+              </button>
+            )}
+
             <img
               src={selectedPhoto.medium_url || selectedPhoto.photo_url}
               alt={`Photo by ${selectedPhoto.username || 'User'}`}
@@ -260,6 +291,40 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
           </div>
         </div>
       )}
+
+      {/* Hidden file input for replace functionality */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+
+          if (!file.type.startsWith('image/')) {
+            alert('Please select an image file');
+            return;
+          }
+
+          if (file.size > 10 * 1024 * 1024) {
+            alert('Image size must be less than 10MB');
+            return;
+          }
+
+          // Upload using shared hook
+          await uploadPhoto(file);
+          
+          // Reset file input
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        }}
+        className="hidden"
+        disabled={uploading}
+      />
+
+      {/* Hidden canvas for image processing */}
+      <canvas ref={canvasRef} className="hidden" />
     </>
   );
 }
