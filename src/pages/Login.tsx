@@ -4,7 +4,7 @@ import { Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => localStorage.getItem('rememberedEmail') || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -14,6 +14,7 @@ const Login: React.FC = () => {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [rememberEmail, setRememberEmail] = useState(true);
   const navigate = useNavigate();
 
   const createProfile = async (userId: string, username: string) => {
@@ -202,6 +203,13 @@ const Login: React.FC = () => {
           await createProfile(data.user.id, username.trim());
         }
         
+        // Save email if remember is checked
+        if (rememberEmail) {
+          localStorage.setItem('rememberedEmail', email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+        }
+        
         navigate('/');
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -216,6 +224,13 @@ const Login: React.FC = () => {
             setError(signInError.message);
           }
           return;
+        }
+        
+        // Save email if remember is checked
+        if (rememberEmail) {
+          localStorage.setItem('rememberedEmail', email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
         }
         
         navigate('/');
@@ -373,6 +388,21 @@ const Login: React.FC = () => {
                     maxLength={15}
                     required
                   />
+                </div>
+              )}
+
+              {!isSignUp && (
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="rememberEmail"
+                    checked={rememberEmail}
+                    onChange={(e) => setRememberEmail(e.target.checked)}
+                    className="w-4 h-4 bg-gray-800 border-gray-600 rounded focus:ring-2 focus:ring-white/50 text-blue-600"
+                  />
+                  <label htmlFor="rememberEmail" className="ml-2 text-sm text-gray-300">
+                    Remember email
+                  </label>
                 </div>
               )}
 
