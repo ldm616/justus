@@ -119,7 +119,7 @@ const Signup: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="form-input pr-10"
-                  placeholder="••••••••"
+                  placeholder=""
                   required
                 />
                 <button
