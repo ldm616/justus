@@ -20,7 +20,7 @@ const EditUsernameModal: React.FC<EditUsernameModalProps> = ({ currentUsername, 
           <h2 className="text-xl font-semibold">Edit Username</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+            className="text-gray-400 hover:text-gray-300"
           >
             <X className="w-5 h-5" />
           </button>
@@ -90,7 +90,7 @@ const ChangeEmailModal: React.FC<{ currentEmail: string; onClose: () => void; on
           <h2 className="text-xl font-semibold">Change Email</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+            className="text-gray-400 hover:text-gray-300"
           >
             <X className="w-5 h-5" />
           </button>
@@ -167,7 +167,7 @@ const ChangePasswordModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
           <h2 className="text-xl font-semibold">Change Password</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+            className="text-gray-400 hover:text-gray-300"
           >
             <X className="w-5 h-5" />
           </button>
@@ -303,7 +303,7 @@ function Profile() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
       </div>
     );
   }
@@ -314,7 +314,7 @@ function Profile() {
         <div className="card p-6 relative">
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-300"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -322,13 +322,13 @@ function Profile() {
           
           <div className="flex flex-col items-center">
             {error && (
-              <div className="mb-4 p-3 rounded bg-red-50 dark:bg-red-900/50 text-red-600 dark:text-red-400 w-full">
+              <div className="mb-4 p-3 rounded bg-red-900/50 text-red-400 w-full">
                 {error}
               </div>
             )}
             
             {successMessage && (
-              <div className="mb-4 p-3 rounded bg-green-50 dark:bg-green-900/50 text-green-600 dark:text-green-400 w-full">
+              <div className="mb-4 p-3 rounded bg-green-900/50 text-green-400 w-full">
                 {successMessage}
               </div>
             )}
@@ -359,18 +359,18 @@ function Profile() {
                 </label>
 
                 <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  <h2 className="text-xl font-semibold text-white">
                     {username || 'Set Username'}
                   </h2>
                   <button
                     onClick={() => setShowEditUsername(true)}
-                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+                    className="p-1 hover:bg-gray-800 rounded-full"
                   >
                     <Pencil className="w-4 h-4 text-gray-500" />
                   </button>
                 </div>
 
-                <div className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                <div className="text-sm text-gray-400 mb-6">
                   {currentEmail}
                 </div>
               </div>
