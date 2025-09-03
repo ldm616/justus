@@ -34,13 +34,9 @@ interface Comment {
 interface PhotoTag {
   id: string;
   photo_id: string;
-  tagged_user_id: string;
-  tagged_by: string;
+  tag: string;
+  created_by: string;
   created_at: string;
-  profiles?: {
-    username: string;
-    avatar_url: string | null;
-  };
 }
 
 interface PhotoModalProps {
@@ -58,8 +54,8 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
   const [newComment, setNewComment] = useState('');
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentText, setEditingCommentText] = useState('');
-  const [showTagMenu, setShowTagMenu] = useState(false);
-  const [familyMembers, setFamilyMembers] = useState<any[]>([]);
+  const [showTagInput, setShowTagInput] = useState(false);
+  const [newTag, setNewTag] = useState('');
   const [loadingComments, setLoadingComments] = useState(true);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [editingCaption, setEditingCaption] = useState(false);
@@ -72,9 +68,6 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
     if (photo) {
       loadComments();
       loadTags();
-      if (profile?.id === photo.user_id) {
-        loadFamilyMembers();
-      }
     }
   }, [photo, profile]);
 
@@ -105,14 +98,9 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
     try {
       const { data, error } = await supabase
         .from('photo_tags')
-        .select(`
-          *,
-          profiles:tagged_user_id (
-            username,
-            avatar_url
-          )
-        `)
-        .eq('photo_id', photo.id);
+        .select('*')
+        .eq('photo_id', photo.id)
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
       setTags(data || []);
@@ -121,21 +109,6 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
     }
   };
 
-  const loadFamilyMembers = async () => {
-    if (!profile?.familyId) return;
-    
-    try {
-      const { data, error } = await supabase
-        .rpc('get_family_members_for_tagging', {
-          p_family_id: profile.familyId
-        });
-
-      if (error) throw error;
-      setFamilyMembers(data || []);
-    } catch (err) {
-      console.error('Error loading family members:', err);
-    }
-  };
 
   const handleAddComment = async () => {
     if (!newComment.trim() || submittingComment || !profile) return;
@@ -218,52 +191,56 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
     }
   };
 
-  const handleToggleTag = async (userId: string) => {
-    const existingTag = tags.find(t => t.tagged_user_id === userId);
+  const handleAddTag = async () => {
+    if (!newTag.trim() || !profile) return;
+    
+    const formattedTag = newTag.trim().startsWith('#') ? newTag.trim() : `#${newTag.trim()}`;
+    
+    try {
+      const { data, error } = await supabase
+        .from('photo_tags')
+        .insert({
+          photo_id: photo.id,
+          tag: formattedTag,
+          created_by: profile.id
+        })
+        .select()
+        .single();
 
-    if (existingTag) {
-      // Remove tag
-      try {
-        const { error } = await supabase
-          .from('photo_tags')
-          .delete()
-          .eq('id', existingTag.id);
-
-        if (error) throw error;
-        setTags(tags.filter(t => t.id !== existingTag.id));
-        showToast('Tag removed');
-      } catch (err) {
-        console.error('Error removing tag:', err);
-        showToast('Failed to remove tag');
+      if (error) {
+        if (error.code === '23505') {
+          showToast('Tag already exists');
+        } else {
+          throw error;
+        }
+        return;
       }
-    } else {
-      // Add tag
-      try {
-        const { data, error } = await supabase
-          .from('photo_tags')
-          .insert({
-            photo_id: photo.id,
-            tagged_user_id: userId,
-            tagged_by: profile?.id
-          })
-          .select(`
-            *,
-            profiles:tagged_user_id (
-              username,
-              avatar_url
-            )
-          `)
-          .single();
-
-        if (error) throw error;
-        setTags([...tags, data]);
-        showToast('Tag added');
-      } catch (err) {
-        console.error('Error adding tag:', err);
-        showToast('Failed to add tag');
-      }
+      
+      setTags([...tags, data]);
+      setNewTag('');
+      setShowTagInput(false);
+      showToast('Tag added');
+    } catch (err) {
+      console.error('Error adding tag:', err);
+      showToast('Failed to add tag');
     }
-    setShowTagMenu(false);
+  };
+
+  const handleRemoveTag = async (tagId: string) => {
+    try {
+      const { error } = await supabase
+        .from('photo_tags')
+        .delete()
+        .eq('id', tagId);
+
+      if (error) throw error;
+      
+      setTags(tags.filter(t => t.id !== tagId));
+      showToast('Tag removed');
+    } catch (err) {
+      console.error('Error removing tag:', err);
+      showToast('Failed to remove tag');
+    }
   };
 
   const handleUpdateCaption = async () => {
@@ -288,18 +265,19 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
-      <div className="w-full h-full overflow-y-auto">
-        <div className="max-w-4xl mx-auto">
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="fixed top-4 right-4 text-white hover:text-gray-300 z-10 bg-black/50 rounded-full p-2"
-          >
-            <X className="w-6 h-6" />
-          </button>
+      <div className="w-full h-full overflow-y-auto flex items-center justify-center">
+        <div className="relative max-w-4xl w-full">
+          {/* Image Section with controls */}
+          <div className="relative bg-black">
+            {/* Close button - inside image container */}
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-10 bg-black/50 rounded-full p-2"
+            >
+              <X className="w-6 h-6" />
+            </button>
 
-          {/* Image Section */}
-          <div className="relative bg-black flex items-center justify-center min-h-[50vh] md:min-h-[60vh]">
+            {/* Replace button - inside image container */}
             {profile && photo.user_id === profile.id && isToday && onReplace && (
               <button
                 onClick={onReplace}
@@ -314,7 +292,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
             <img
               src={photo.medium_url || photo.photo_url}
               alt={`Photo by ${photo.username || 'User'}`}
-              className="max-w-full max-h-[70vh] object-contain"
+              className="w-full object-contain max-h-[70vh]"
               onLoad={() => setImageLoaded(true)}
             />
           </div>
@@ -341,39 +319,13 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                     </div>
                   </div>
                   
-                  {profile?.id === photo.user_id && familyMembers.length > 0 && (
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowTagMenu(!showTagMenu)}
-                        className="p-2 hover:bg-gray-800 rounded-full"
-                      >
-                        <Tag className="w-5 h-5" />
-                      </button>
-                      
-                      {showTagMenu && (
-                        <div className="absolute right-0 top-10 bg-gray-800 rounded-lg shadow-xl p-2 w-48 z-20">
-                          <p className="text-xs text-gray-400 px-2 py-1">Tag family members</p>
-                          {familyMembers.map(member => {
-                            const isTagged = tags.some(t => t.tagged_user_id === member.id);
-                            return (
-                              <button
-                                key={member.id}
-                                onClick={() => handleToggleTag(member.id)}
-                                className="w-full flex items-center gap-2 p-2 hover:bg-gray-700 rounded text-left"
-                              >
-                                {member.avatar_url ? (
-                                  <img src={member.avatar_url} className="w-6 h-6 rounded-full" />
-                                ) : (
-                                  <div className="w-6 h-6 rounded-full bg-gray-600" />
-                                )}
-                                <span className="text-sm flex-1">{member.username}</span>
-                                {isTagged && <X className="w-4 h-4 text-gray-400" />}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
+                  {profile?.id === photo.user_id && (
+                    <button
+                      onClick={() => setShowTagInput(true)}
+                      className="p-2 hover:bg-gray-800 rounded-full"
+                    >
+                      <Tag className="w-5 h-5" />
+                    </button>
                   )}
                 </div>
 
@@ -414,9 +366,9 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                         {profile?.id === photo.user_id && (
                           <button
                             onClick={() => setEditingCaption(true)}
-                            className="p-1 hover:bg-gray-800 rounded"
+                            className="p-2 hover:bg-gray-800 rounded-full"
                           >
-                            <Edit2 className="w-3 h-3" />
+                            <Edit2 className="w-5 h-5" />
                           </button>
                         )}
                       </div>
@@ -424,16 +376,63 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                   </div>
                 )}
 
-                {/* Tags Display */}
-                {tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {tags.map(tag => (
-                      <span key={tag.id} className="text-xs bg-gray-800 px-2 py-1 rounded">
-                        @{tag.profiles?.username}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                {/* Tags Display and Input */}
+                <div className="mt-3">
+                  {showTagInput && profile?.id === photo.user_id && (
+                    <div className="flex gap-2 mb-2">
+                      <input
+                        type="text"
+                        value={newTag}
+                        onChange={(e) => setNewTag(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddTag();
+                          } else if (e.key === 'Escape') {
+                            setShowTagInput(false);
+                            setNewTag('');
+                          }
+                        }}
+                        placeholder="Add tag (e.g. #vacation)"
+                        className="flex-1 bg-gray-800 rounded px-2 py-1 text-sm"
+                        autoFocus
+                      />
+                      <button
+                        onClick={handleAddTag}
+                        className="text-xs bg-blue-600 px-3 py-1 rounded hover:bg-blue-700"
+                      >
+                        Add
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowTagInput(false);
+                          setNewTag('');
+                        }}
+                        className="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                  
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {tags.map(tag => (
+                        <span key={tag.id} className="inline-flex items-center text-xs bg-gray-800 px-2 py-1 rounded group">
+                          <span>{tag.tag}</span>
+                          {profile?.id === photo.user_id && (
+                            <button
+                              onClick={() => handleRemoveTag(tag.id)}
+                              className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Comments Section */}
