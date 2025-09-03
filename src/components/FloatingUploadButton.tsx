@@ -43,7 +43,7 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
     reader.readAsDataURL(file);
   };
 
-  const cropAndResizeImage = (file: File): Promise<{ full: Blob; thumbnail: Blob }> => {
+  const cropAndResizeImage = (file: File): Promise<{ full: Blob; medium: Blob; thumbnail: Blob }> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       const reader = new FileReader();
@@ -61,10 +61,10 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
         const startX = (img.width - size) / 2;
         const startY = (img.height - size) / 2;
 
-        // Create full size (400x400) image
-        canvas.width = 400;
-        canvas.height = 400;
-        ctx.drawImage(img, startX, startY, size, size, 0, 0, 400, 400);
+        // Create full size (1200x1200) image for high res displays
+        canvas.width = 1200;
+        canvas.height = 1200;
+        ctx.drawImage(img, startX, startY, size, size, 0, 0, 1200, 1200);
         
         canvas.toBlob((fullBlob) => {
           if (!fullBlob) {
@@ -72,19 +72,31 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
             return;
           }
 
-          // Create thumbnail (200x200) image
-          canvas.width = 200;
-          canvas.height = 200;
-          ctx.drawImage(img, startX, startY, size, size, 0, 0, 200, 200);
+          // Create medium size (600x600) for modal view
+          canvas.width = 600;
+          canvas.height = 600;
+          ctx.drawImage(img, startX, startY, size, size, 0, 0, 600, 600);
           
-          canvas.toBlob((thumbBlob) => {
-            if (!thumbBlob) {
-              reject(new Error('Failed to create thumbnail'));
+          canvas.toBlob((mediumBlob) => {
+            if (!mediumBlob) {
+              reject(new Error('Failed to create medium size image'));
               return;
             }
-            resolve({ full: fullBlob, thumbnail: thumbBlob });
-          }, 'image/jpeg', 0.9);
-        }, 'image/jpeg', 0.9);
+
+            // Create thumbnail (400x400) for grid view
+            canvas.width = 400;
+            canvas.height = 400;
+            ctx.drawImage(img, startX, startY, size, size, 0, 0, 400, 400);
+            
+            canvas.toBlob((thumbBlob) => {
+              if (!thumbBlob) {
+                reject(new Error('Failed to create thumbnail'));
+                return;
+              }
+              resolve({ full: fullBlob, medium: mediumBlob, thumbnail: thumbBlob });
+            }, 'image/jpeg', 0.92);
+          }, 'image/jpeg', 0.92);
+        }, 'image/jpeg', 0.92);
       };
 
       img.onerror = () => reject(new Error('Failed to load image'));
@@ -100,11 +112,12 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
 
     try {
       // Crop and resize the image
-      const { full, thumbnail } = await cropAndResizeImage(selectedFile);
+      const { full, medium, thumbnail } = await cropAndResizeImage(selectedFile);
 
       // Generate unique filenames
       const timestamp = Date.now();
       const fullFileName = `${profile.id}/${timestamp}_full.jpg`;
+      const mediumFileName = `${profile.id}/${timestamp}_medium.jpg`;
       const thumbFileName = `${profile.id}/${timestamp}_thumb.jpg`;
 
       // Upload full size image
@@ -116,6 +129,16 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
         });
 
       if (fullError) throw fullError;
+
+      // Upload medium size image
+      const { error: mediumError } = await supabase.storage
+        .from('photos')
+        .upload(mediumFileName, medium, {
+          cacheControl: '31536000',
+          upsert: hasUploadedToday
+        });
+
+      if (mediumError) throw mediumError;
 
       // Upload thumbnail
       const { error: thumbError } = await supabase.storage
@@ -132,6 +155,10 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
         .from('photos')
         .getPublicUrl(fullFileName);
 
+      const { data: { publicUrl: mediumUrl } } = supabase.storage
+        .from('photos')
+        .getPublicUrl(mediumFileName);
+
       const { data: { publicUrl: thumbUrl } } = supabase.storage
         .from('photos')
         .getPublicUrl(thumbFileName);
@@ -143,6 +170,7 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
           .from('photos')
           .update({
             photo_url: fullUrl,
+            medium_url: mediumUrl,
             thumbnail_url: thumbUrl,
             created_at: new Date().toISOString()
           })
@@ -157,6 +185,7 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
           .insert({
             user_id: profile.id,
             photo_url: fullUrl,
+            medium_url: mediumUrl,
             thumbnail_url: thumbUrl,
             upload_date: new Date().toISOString().split('T')[0]
           });

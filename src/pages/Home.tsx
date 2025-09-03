@@ -44,7 +44,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen pt-[60px] md:pt-12 pb-16">
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto px-0 md:px-4 py-0 md:py-6">
         <PhotoGrid refreshTrigger={refreshTrigger} />
         
         {profile && (

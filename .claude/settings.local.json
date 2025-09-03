@@ -35,7 +35,10 @@
       "Bash(cat:*)",
       "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/**)",
       "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/components/**)",
-      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/**)"
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/supabase/functions/resizeImage/**)"
     ],
     "deny": [],
     "ask": []
