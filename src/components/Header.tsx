@@ -1,12 +1,11 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { User, ArrowLeft, LogIn, Home } from 'lucide-react';
-import { useUser } from '../contexts/UserContext';
 import { supabase } from '../lib/supabaseClient';
 
 export default function Header() {
-  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
-  const { profile } = useUser();
+  const [currentUser, setCurrentUser] = React.useState<any>(null);
+  const [userProfile, setUserProfile] = React.useState<any>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const isHomePage = location.pathname === '/';
@@ -14,18 +13,40 @@ export default function Header() {
   const isProfilePage = location.pathname === '/profile';
 
   React.useEffect(() => {
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsLoggedIn(!!session);
+      setCurrentUser(session?.user ?? null);
+      if (session?.user) {
+        loadUserProfile(session.user.id);
+      }
     });
 
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session);
+      setCurrentUser(session?.user ?? null);
+      if (session?.user) {
+        loadUserProfile(session.user.id);
+      } else {
+        setUserProfile(null);
+      }
     });
 
     return () => {
       subscription.unsubscribe();
     };
   }, []);
+
+  const loadUserProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('username, avatar_url')
+      .eq('id', userId)
+      .single();
+    
+    if (data) {
+      setUserProfile(data);
+    }
+  };
 
 
   return (
@@ -59,13 +80,13 @@ export default function Header() {
         )}
 
         <div className="flex items-center space-x-4">
-          {isLoggedIn && !isAuthPage ? (
+          {currentUser && !isAuthPage ? (
             <Link to="/profile" className="flex items-center space-x-2 text-white">
               <div className="relative w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                {profile?.avatarUrl ? (
+                {userProfile?.avatar_url ? (
                   <img 
-                    src={profile.avatarUrl} 
-                    alt={profile?.username || 'User'} 
+                    src={userProfile.avatar_url} 
+                    alt={userProfile?.username || 'User'} 
                     className="avatar w-8 h-8"
                   />
                 ) : (
@@ -73,7 +94,7 @@ export default function Header() {
                 )}
               </div>
             </Link>
-          ) : !isAuthPage && !isLoggedIn ? (
+          ) : !isAuthPage && !currentUser ? (
             <Link 
               to="/login"
               className="text-white flex items-center"
