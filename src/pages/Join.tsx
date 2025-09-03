@@ -232,7 +232,7 @@ export default function Join() {
             Join {invitation.families.name}
           </h1>
           <p className="text-gray-400">
-            Create your account to start sharing daily photos
+            Share one photo a day with your family
           </p>
         </div>
 
