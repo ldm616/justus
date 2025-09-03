@@ -1,4 +1,3 @@
-import React from 'react';
 import { Heart, Camera } from 'lucide-react';
 
 interface AppIconProps {
