@@ -60,7 +60,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
   const [submittingComment, setSubmittingComment] = useState(false);
   const [editingCaption, setEditingCaption] = useState(false);
   const [captionText, setCaptionText] = useState(photo.caption || '');
-  const [activeSection, setActiveSection] = useState<'caption' | 'comments' | 'tags' | null>('comments');
+  const [activeSection, setActiveSection] = useState<'caption' | 'comments' | 'tags' | null>('caption');
   const { profile } = useUser();
   const { showToast } = useToast();
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
@@ -69,6 +69,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
     if (photo) {
       loadComments();
       loadTags();
+      setCaptionText(photo.caption || '');
     }
   }, [photo, profile]);
 
@@ -255,7 +256,9 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
 
       if (error) throw error;
       
+      // Update the photo object and state
       photo.caption = captionText.trim() || null;
+      setCaptionText(captionText.trim());
       setEditingCaption(false);
       showToast('Caption updated');
     } catch (err) {
@@ -394,9 +397,9 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                     </div>
                   ) : (
                     <div>
-                      {photo.caption ? (
+                      {captionText ? (
                         <div className="flex items-start gap-2">
-                          <p className="text-sm flex-1">{photo.caption}</p>
+                          <p className="text-sm flex-1">{captionText}</p>
                           {profile?.id === photo.user_id && (
                             <button
                               onClick={() => setEditingCaption(true)}
