@@ -73,7 +73,7 @@ export default function Header() {
                 )}
               </div>
             </Link>
-          ) : (
+          ) : !isAuthPage ? (
             <Link 
               to="/login"
               className="text-white flex items-center"
@@ -81,7 +81,7 @@ export default function Header() {
             >
               <LogIn className="w-6 h-6" />
             </Link>
-          )}
+          ) : null}
         </div>
       </div>
     </header>
