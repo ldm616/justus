@@ -4,7 +4,7 @@ import { useUser } from '../contexts/UserContext';
 import { supabase } from '../lib/supabaseClient';
 import PhotoGrid from '../components/PhotoGrid';
 import FloatingUploadButton from '../components/FloatingUploadButton';
-import { Camera } from 'lucide-react';
+import AppIcon from '../components/AppIcon';
 
 export default function Home() {
   const { profile } = useUser();
@@ -74,9 +74,7 @@ export default function Home() {
       <div className="min-h-screen pt-[60px] md:pt-12 pb-16 flex items-center justify-center">
         <div className="text-center px-4">
           <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center">
-              <Camera className="w-10 h-10 text-white" />
-            </div>
+            <AppIcon size={80} />
           </div>
           <h1 className="text-4xl font-bold text-white mb-3">JustUs</h1>
           <p className="text-xl text-gray-400 mb-8">Share one photo a day with your family</p>
