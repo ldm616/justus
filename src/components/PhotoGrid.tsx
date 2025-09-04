@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { api } from '../lib/api';
 import { useUser } from '../contexts/UserContext';
 import { usePhotoUpload } from '../hooks/usePhotoUpload';
 import { useToast } from '../contexts/ToastContext';
@@ -39,37 +40,10 @@ export default function PhotoGrid({ refreshTrigger }: PhotoGridProps) {
     console.log('PhotoGrid: fetchPhotos called');
     setLoading(true); // Force loading state to ensure re-render
     try {
-      // If user has a family, only fetch family photos
-      let query = supabase
-        .from('photos')
-        .select(`
-          id,
-          user_id,
-          photo_url,
-          medium_url,
-          thumbnail_url,
-          created_at,
-          upload_date,
-          family_id,
-          profiles (
-            username,
-            avatar_url
-          )
-        `)
-        .order('upload_date', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      // Filter by family if user has one
-      if (profile?.familyId) {
-        query = query.eq('family_id', profile.familyId);
-      }
-
-      const { data, error } = await query;
+      // Use API to fetch photos - it handles family filtering on backend
+      const data = await api.getPhotos();
       
-      console.log('PhotoGrid: Fetched photos:', { data, error });
-
-      if (error) throw error;
+      console.log('PhotoGrid: Fetched photos:', data);
 
       // Transform the data to flatten the profiles relationship
       const typedPhotos = (data || []).map((photo: any) => ({
