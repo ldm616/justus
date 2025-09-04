@@ -71,7 +71,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
         .from('photo_comments')
         .select(`
           *,
-          profiles:user_id (
+          profiles!inner (
             username,
             avatar_url
           )
@@ -118,7 +118,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
         })
         .select(`
           *,
-          profiles:user_id (
+          profiles!inner (
             username,
             avatar_url
           )
