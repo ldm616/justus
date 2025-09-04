@@ -66,11 +66,11 @@ export default function Header() {
         {isHomePage ? (
           <Link 
             to="/"
-            className="text-white flex items-baseline gap-1"
+            className="text-white flex items-baseline gap-1 min-w-0 max-w-[calc(100%-120px)] md:max-w-none"
           >
-            <span className="font-bold text-[22px]">JustUs</span>
+            <span className="font-bold text-[22px] flex-shrink-0">JustUs</span>
             {familyName && (
-              <span className="text-[18px] font-normal">: {familyName}</span>
+              <span className="text-[22px] font-normal truncate">: {familyName}</span>
             )}
           </Link>
         ) : isAuthPage ? (
