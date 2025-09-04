@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { X, RefreshCw, Edit2, Trash2, MoreHorizontal } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, RefreshCw, MoreHorizontal } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../contexts/UserContext';
 import { formatTimeAgo } from '../utils/timeFormat';
@@ -30,13 +30,13 @@ interface Comment {
   };
 }
 
-interface PhotoTag {
-  id: string;
-  photo_id: string;
-  tag: string;
-  created_by: string;
-  created_at: string;
-}
+// interface PhotoTag {
+//   id: string;
+//   photo_id: string;
+//   tag: string;
+//   created_by: string;
+//   created_at: string;
+// }
 
 interface PhotoModalProps {
   photo: Photo;
@@ -49,22 +49,19 @@ interface PhotoModalProps {
 export default function PhotoModal({ photo, onClose, onReplace, uploading = false, isToday = false }: PhotoModalProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [tags, setTags] = useState<PhotoTag[]>([]);
+  // const [tags, setTags] = useState<PhotoTag[]>([]);
   const [newComment, setNewComment] = useState('');
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentText, setEditingCommentText] = useState('');
-  const [showTagInput, setShowTagInput] = useState(false);
-  const [newTag, setNewTag] = useState('');
   const [loadingComments, setLoadingComments] = useState(true);
   const [submittingComment, setSubmittingComment] = useState(false);
   const { profile } = useUser();
   const { showToast } = useToast();
-  const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (photo) {
       loadComments();
-      loadTags();
+      // loadTags();
     }
   }, [photo, profile]);
 
@@ -91,20 +88,20 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
     }
   };
 
-  const loadTags = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('photo_tags')
-        .select('*')
-        .eq('photo_id', photo.id)
-        .order('created_at', { ascending: true });
+  // const loadTags = async () => {
+  //   try {
+  //     const { data, error } = await supabase
+  //       .from('photo_tags')
+  //       .select('*')
+  //       .eq('photo_id', photo.id)
+  //       .order('created_at', { ascending: true });
 
-      if (error) throw error;
-      setTags(data || []);
-    } catch (err) {
-      console.error('Error loading tags:', err);
-    }
-  };
+  //     if (error) throw error;
+  //     setTags(data || []);
+  //   } catch (err) {
+  //     console.error('Error loading tags:', err);
+  //   }
+  // };
 
 
   const handleAddComment = async () => {
@@ -188,57 +185,6 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
     }
   };
 
-  const handleAddTag = async () => {
-    if (!newTag.trim() || !profile) return;
-    
-    const formattedTag = newTag.trim().startsWith('#') ? newTag.trim() : `#${newTag.trim()}`;
-    
-    try {
-      const { data, error } = await supabase
-        .from('photo_tags')
-        .insert({
-          photo_id: photo.id,
-          tag: formattedTag,
-          created_by: profile.id
-        })
-        .select()
-        .single();
-
-      if (error) {
-        if (error.code === '23505') {
-          showToast('Tag already exists');
-        } else {
-          throw error;
-        }
-        return;
-      }
-      
-      setTags([...tags, data]);
-      setNewTag('');
-      setShowTagInput(false);
-      showToast('Tag added');
-    } catch (err) {
-      console.error('Error adding tag:', err);
-      showToast('Failed to add tag');
-    }
-  };
-
-  const handleRemoveTag = async (tagId: string) => {
-    try {
-      const { error } = await supabase
-        .from('photo_tags')
-        .delete()
-        .eq('id', tagId);
-
-      if (error) throw error;
-      
-      setTags(tags.filter(t => t.id !== tagId));
-      showToast('Tag removed');
-    } catch (err) {
-      console.error('Error removing tag:', err);
-      showToast('Failed to remove tag');
-    }
-  };
 
 
   return (
@@ -385,12 +331,9 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                           )}
                         </div>
                       </div>
-                        ))
-                      )}
-                    </div>
-                  </>
-                ) : null
-                )}
+                    ))}
+                  </div>
+                ) : null}
               </div>
               
               {/* Instagram-style Comment Input - Fixed at bottom */}
