@@ -67,17 +67,36 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
 
   const loadComments = async () => {
     try {
-      const { data, error } = await supabase
+      // First get the comments
+      const { data: commentsData, error: commentsError } = await supabase
         .from('photo_comments')
-        .select(`
-          *,
-          profiles (
-            username,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('photo_id', photo.id)
         .order('created_at', { ascending: false });
+
+      if (commentsError) throw commentsError;
+
+      // Then get the profiles for those comments
+      if (commentsData && commentsData.length > 0) {
+        const userIds = [...new Set(commentsData.map(c => c.user_id))];
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        // Combine the data
+        const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+        const enrichedComments = commentsData.map(comment => ({
+          ...comment,
+          profiles: profilesMap.get(comment.user_id) || null
+        }));
+        
+        setComments(enrichedComments);
+      } else {
+        setComments([]);
+      }
 
       if (error) throw error;
       setComments(data || []);
@@ -116,18 +135,21 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
           user_id: profile.id,
           comment: newComment.trim()
         })
-        .select(`
-          *,
-          profiles (
-            username,
-            avatar_url
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) throw error;
       
-      setComments([data, ...comments]);
+      // Add the profile data to the new comment
+      const enrichedComment = {
+        ...data,
+        profiles: {
+          username: profile.username,
+          avatar_url: profile.avatarUrl
+        }
+      };
+      
+      setComments([enrichedComment, ...comments]);
       setNewComment('');
       showToast('Comment added');
     } catch (err: any) {
