@@ -116,7 +116,7 @@ export default function Home() {
           </>
         ) : (
           <div className="text-center py-20">
-            <p className="text-gray-400 mb-4">You need to create a family to start sharing photos</p>
+            <p className="text-gray-400 mb-4">Create a family to start sharing photos</p>
             <Link to="/family" className="btn-primary">
               Create family
             </Link>
