@@ -1,25 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Camera } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const createProfile = async (userId: string, username: string) => {
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image size must be less than 2MB');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setError('File must be an image');
+      return;
+    }
+
+    setAvatarFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const uploadAvatar = async (userId: string) => {
+    if (!avatarFile) return null;
+
+    try {
+      const fileExt = avatarFile.name.split('.').pop();
+      const fileName = `${userId}-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, avatarFile, { cacheControl: '31536000', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (err) {
+      console.error('Error uploading avatar:', err);
+      return null;
+    }
+  };
+
+  const createProfile = async (userId: string, username: string, avatarUrl: string | null) => {
     try {
       const { error } = await supabase
         .from('profiles')
         .insert([{ 
           id: userId,
           username,
-          avatar_url: null
+          avatar_url: avatarUrl
         }]);
       
       if (error) throw error;
@@ -54,7 +103,8 @@ const Signup: React.FC = () => {
       if (signUpError) throw signUpError;
 
       if (data.user) {
-        await createProfile(data.user.id, username.trim());
+        const avatarUrl = await uploadAvatar(data.user.id);
+        await createProfile(data.user.id, username.trim(), avatarUrl);
         navigate('/');
       }
     } catch (err: any) {
@@ -78,6 +128,36 @@ const Signup: React.FC = () => {
                 {error}
               </div>
             )}
+
+            {/* Avatar Upload */}
+            <div className="flex justify-center">
+              <label className="relative group cursor-pointer">
+                <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden relative shadow-md">
+                  {avatarPreview ? (
+                    <img
+                      src={avatarPreview}
+                      alt="Avatar preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Camera className="w-10 h-10 text-gray-400" />
+                  )}
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                    <Camera className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            <p className="text-center text-sm text-gray-400">
+              Add a profile photo (optional)
+            </p>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">

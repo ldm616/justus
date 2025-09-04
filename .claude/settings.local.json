@@ -42,7 +42,8 @@
       "Bash(find:*)",
       "Bash(grep:*)",
       "Bash(git reset:*)",
-      "WebFetch(domain:supabase.com)"
+      "WebFetch(domain:supabase.com)",
+      "Bash(open clear-auth.html)"
     ],
     "deny": [],
     "ask": []
