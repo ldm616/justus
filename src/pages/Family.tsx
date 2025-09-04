@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Mail, Plus, Trash2, X, Check, Edit2, Copy, Ban, UserCheck } from 'lucide-react';
+import { Users, Mail, Plus, Trash2, X, Check, Edit2, Copy, Ban, UserCheck, Info } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../contexts/UserContext';
 import { useToast } from '../contexts/ToastContext';
@@ -45,6 +45,7 @@ export default function Family() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
   const navigate = useNavigate();
   const { profile, updateProfile } = useUser();
   const { showToast } = useToast();
@@ -285,17 +286,8 @@ export default function Family() {
       // Generate magic link
       const magicLink = `${window.location.origin}/join?token=${invitation.invite_token}`;
       
-      // Try to copy to clipboard
-      try {
-        await navigator.clipboard.writeText(magicLink);
-        setCopiedLink(invitation.id);
-        showToast('Magic link copied! Share it with your family member via text or email.');
-      } catch (clipboardError) {
-        // Fallback for clipboard permission denied or not available
-        console.warn('Clipboard access denied, showing link in modal');
-        // Still add the invitation but show a different message
-        showToast('Invitation created! Copy the link from the invitations list below.');
-      }
+      // Don't auto-copy, just show success message
+      showToast('Magic link created! Copy the link from the invitations list below.')
       
       setInvitations([invitation, ...invitations]);
       setShowInviteModal(false);
@@ -554,7 +546,7 @@ export default function Family() {
                         Status: {invite.accepted_at ? (
                           <span className="text-green-500">Member joined</span>
                         ) : (
-                          <span className="text-yellow-500">Link sent</span>
+                          <span className="text-yellow-500">Magic link created</span>
                         )}
                       </p>
                     </div>
@@ -605,6 +597,26 @@ export default function Family() {
                 </div>
               ))}
             </div>
+            {invitations.length > 0 && (
+              <button
+                onClick={() => setShowHowItWorks(!showHowItWorks)}
+                className="text-sm text-blue-500 hover:text-blue-400 mt-4 flex items-center gap-1"
+              >
+                <Info className="w-4 h-4" />
+                How to use your magic links
+              </button>
+            )}
+            {showHowItWorks && (
+              <div className="bg-gray-800 rounded-lg p-4 mt-2 space-y-2">
+                <p className="text-sm text-gray-300 font-medium">How magic links work:</p>
+                <ol className="text-xs text-gray-400 space-y-1 list-decimal list-inside">
+                  <li>Click "Copy link" next to any pending invitation</li>
+                  <li>Share the magic link by text or email with your family member</li>
+                  <li>They will click the link and follow the instructions to join your family</li>
+                  <li>Once they join, the invitation status will update to "Member joined"</li>
+                </ol>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -644,16 +656,6 @@ export default function Family() {
                 </p>
               </div>
 
-              <div className="bg-gray-800 rounded-lg p-4 space-y-2">
-                <p className="text-sm text-gray-300 font-medium">How it works:</p>
-                <ol className="text-xs text-gray-400 space-y-1 list-decimal list-inside">
-                  <li>A magic link will be generated for this invitation</li>
-                  <li>The link will be automatically copied to your clipboard</li>
-                  <li>Share the magic link by text or email with your family member</li>
-                  <li>They will click the link and follow the instructions to join your family</li>
-                </ol>
-              </div>
-
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   onClick={() => setShowInviteModal(false)}
@@ -666,7 +668,7 @@ export default function Family() {
                   disabled={!inviteEmail}
                   className="btn-primary"
                 >
-                  Create invitation
+                  Create magic link
                 </button>
               </div>
             </div>
