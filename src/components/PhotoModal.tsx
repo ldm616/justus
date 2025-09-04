@@ -202,13 +202,19 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
 
           {/* Replace button - bottom right of image */}
           {profile && photo.user_id === profile.id && isToday && onReplace && (
-            <button
-              onClick={onReplace}
-              className="absolute bottom-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all z-10"
-              disabled={uploading}
-            >
-              <RefreshCw className={`w-5 h-5 ${uploading ? 'animate-spin' : ''}`} />
-            </button>
+            <div className="absolute bottom-4 right-4 group">
+              <button
+                onClick={onReplace}
+                className="bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all z-10"
+                disabled={uploading}
+                aria-label="Replace today's photo"
+              >
+                <RefreshCw className={`w-5 h-5 ${uploading ? 'animate-spin' : ''}`} />
+              </button>
+              <div className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-black/90 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                Replace today's photo
+              </div>
+            </div>
           )}
 
           <img
