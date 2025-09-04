@@ -25,15 +25,7 @@ const Signup: React.FC = () => {
   };
 
   const handleDisabledClick = () => {
-    const missing = [];
-    if (!email.trim()) missing.push('Email');
-    if (!username.trim() || username.trim().length < 2) missing.push('Username (min 2 chars)');
-    if (password.length < 6) missing.push('Password (min 6 chars)');
-    if (!avatarFile) missing.push('Profile photo');
-    
-    if (missing.length > 0) {
-      showToast(`Please complete: ${missing.join(', ')}`);
-    }
+    showToast('Please complete the form');
   };
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
