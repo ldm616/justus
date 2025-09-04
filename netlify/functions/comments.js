@@ -1,11 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY // Service key bypasses RLS
-);
-
 export async function handler(event, context) {
+  // Check if service key is available
+  if (!process.env.SUPABASE_SERVICE_KEY) {
+    console.error('SUPABASE_SERVICE_KEY not configured');
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ 
+        error: 'Server configuration error: SUPABASE_SERVICE_KEY not set. Please add it to Netlify environment variables.' 
+      })
+    };
+  }
+
+  const supabase = createClient(
+    process.env.VITE_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY // Service key bypasses RLS
+  );
   const { headers, httpMethod, body, queryStringParameters } = event;
 
   // Get the user's token from the Authorization header
