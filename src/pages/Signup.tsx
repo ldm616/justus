@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Camera } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { useToast } from '../contexts/ToastContext';
 
 const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -14,6 +15,26 @@ const Signup: React.FC = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
+
+  const isFormValid = () => {
+    return email.trim() !== '' && 
+           password.length >= 6 && 
+           username.trim().length >= 2 && 
+           avatarFile !== null;
+  };
+
+  const handleDisabledClick = () => {
+    const missing = [];
+    if (!email.trim()) missing.push('Email');
+    if (!username.trim() || username.trim().length < 2) missing.push('Username (min 2 chars)');
+    if (password.length < 6) missing.push('Password (min 6 chars)');
+    if (!avatarFile) missing.push('Profile photo');
+    
+    if (missing.length > 0) {
+      showToast(`Please complete: ${missing.join(', ')}`);
+    }
+  };
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -156,7 +177,7 @@ const Signup: React.FC = () => {
               </label>
             </div>
             <p className="text-center text-sm text-gray-400">
-              Add a profile photo (optional)
+              Add a profile photo (required)
             </p>
 
             <div>
@@ -216,9 +237,10 @@ const Signup: React.FC = () => {
             </div>
 
             <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full"
+              type={isFormValid() ? "submit" : "button"}
+              disabled={loading || !isFormValid()}
+              onClick={!isFormValid() ? handleDisabledClick : undefined}
+              className="btn-primary w-full disabled:bg-gray-700 disabled:cursor-not-allowed"
             >
               {loading ? 'Creating account...' : 'Sign up'}
             </button>
