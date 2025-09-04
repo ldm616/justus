@@ -46,7 +46,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     })();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         // Fetch profile on any auth change including sign in
         fetchProfile(session.user.id);
