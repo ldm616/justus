@@ -252,6 +252,34 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
 
             {/* Comments Section */}
             <div className="flex flex-col h-[300px]">
+              {/* Instagram-style Comment Input - Fixed at top */}
+              <div className="border-b border-gray-800 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddComment();
+                      }
+                    }}
+                    placeholder="Add a comment..."
+                    className="flex-1 bg-transparent outline-none text-sm placeholder-gray-500"
+                  />
+                  {newComment.trim() && (
+                    <button
+                      onClick={handleAddComment}
+                      disabled={submittingComment}
+                      className="text-blue-500 font-semibold text-sm hover:text-blue-400 disabled:opacity-50"
+                    >
+                      Post
+                    </button>
+                  )}
+                </div>
+              </div>
+              
               {/* Comments List */}
               <div className="flex-1 overflow-y-auto px-4 py-2">
                 {loadingComments ? (
@@ -340,34 +368,6 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                     ))}
                   </div>
                 ) : null}
-              </div>
-              
-              {/* Instagram-style Comment Input - Fixed at bottom */}
-              <div className="border-t border-gray-800 px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <input
-                    type="text"
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddComment();
-                      }
-                    }}
-                    placeholder="Add a comment..."
-                    className="flex-1 bg-transparent outline-none text-sm placeholder-gray-500"
-                  />
-                  {newComment.trim() && (
-                    <button
-                      onClick={handleAddComment}
-                      disabled={submittingComment}
-                      className="text-blue-500 font-semibold text-sm hover:text-blue-400 disabled:opacity-50"
-                    >
-                      Post
-                    </button>
-                  )}
-                </div>
               </div>
             </div>
           </div>
