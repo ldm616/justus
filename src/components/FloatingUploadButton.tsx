@@ -42,7 +42,7 @@ export default function FloatingUploadButton({ onPhotoUploaded, hasUploadedToday
       {!hasUploadedToday && (
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="fixed bottom-16 right-4 md:bottom-20 md:right-8 w-14 h-14 bg-white hover:bg-gray-100 text-black rounded-full shadow-lg flex items-center justify-center z-50 transition-all hover:scale-110 disabled:opacity-50"
+          className="fixed bottom-16 right-4 md:bottom-20 md:right-8 w-14 h-14 bg-white hover:bg-gray-100 text-black rounded-full shadow-lg flex items-center justify-center z-50 transition-all hover:scale-110 disabled:opacity-50 pulse-animation"
           aria-label="Upload photo"
           disabled={uploading}
         >
