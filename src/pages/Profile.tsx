@@ -381,7 +381,7 @@ function Profile() {
                   className="w-full inline-flex justify-center items-center btn-secondary"
                 >
                   <Users className="w-4 h-4 mr-2" />
-                  Manage family
+                  {profile?.isAdmin ? 'Manage family' : 'View family'}
                 </Link>
 
                 <button
