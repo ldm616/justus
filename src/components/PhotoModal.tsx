@@ -67,19 +67,23 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
 
   const loadComments = async () => {
     try {
-      const { data, error } = await supabase
-        .from('photo_comments')
-        .select(`
-          *,
-          profiles (
-            username,
-            avatar_url
-          )
-        `)
-        .eq('photo_id', photo.id)
-        .order('created_at', { ascending: false });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error('No session');
+        return;
+      }
 
-      if (error) throw error;
+      const response = await fetch(`/.netlify/functions/comments?photo_id=${photo.id}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to load comments: ${response.status}`);
+      }
+
+      const data = await response.json();
       setComments(data || []);
     } catch (err) {
       console.error('Error loading comments:', err);
@@ -109,24 +113,29 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
 
     setSubmittingComment(true);
     try {
-      const { data, error } = await supabase
-        .from('photo_comments')
-        .insert({
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No session');
+      }
+
+      const response = await fetch('/.netlify/functions/comments', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           photo_id: photo.id,
-          user_id: profile.id,
           comment: newComment.trim()
         })
-        .select(`
-          *,
-          profiles (
-            username,
-            avatar_url
-          )
-        `)
-        .single();
+      });
 
-      if (error) throw error;
-      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add comment');
+      }
+
+      const data = await response.json();
       setComments([data, ...comments]);
       setNewComment('');
       showToast('Comment added');
@@ -142,15 +151,26 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
     if (!editingCommentText.trim()) return;
 
     try {
-      const { error } = await supabase
-        .from('photo_comments')
-        .update({
-          comment: editingCommentText.trim(),
-          edited_at: new Date().toISOString()
-        })
-        .eq('id', commentId);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No session');
+      }
 
-      if (error) throw error;
+      const response = await fetch('/.netlify/functions/comments', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          comment_id: commentId,
+          comment: editingCommentText.trim()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to edit comment');
+      }
 
       setComments(comments.map(c => 
         c.id === commentId 
@@ -170,12 +190,21 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
     if (!confirm('Are you sure?')) return;
 
     try {
-      const { error } = await supabase
-        .from('photo_comments')
-        .delete()
-        .eq('id', commentId);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No session');
+      }
 
-      if (error) throw error;
+      const response = await fetch(`/.netlify/functions/comments?comment_id=${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete comment');
+      }
 
       setComments(comments.filter(c => c.id !== commentId));
       showToast('Comment deleted');
