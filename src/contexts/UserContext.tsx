@@ -46,8 +46,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     })();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
+        // Fetch profile on any auth change including sign in
         fetchProfile(session.user.id);
       } else {
         setProfile(null);
@@ -62,29 +63,80 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
-      let { data, error } = await supabase
-        .from('profiles')
-        .select('username, avatar_url, is_admin, family_id, needs_password_change')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) {
-        throw error;
+      // Try using the backend API first
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No session');
       }
 
-      if (data) {
-        setProfile({
-          id: userId,
-          username: data.username,
-          avatarUrl: data.avatar_url,
-          isAdmin: data.is_admin || false,
-          familyId: data.family_id || null,
-          needsPasswordChange: data.needs_password_change || false
-        });
+      const response = await fetch('/.netlify/functions/profiles', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        // Fallback to direct Supabase query if API fails
+        let { data, error } = await supabase
+          .from('profiles')
+          .select('username, avatar_url, is_admin, family_id, needs_password_change')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (error) {
+          throw error;
+        }
+
+        if (data) {
+          setProfile({
+            id: userId,
+            username: data.username,
+            avatarUrl: data.avatar_url,
+            isAdmin: data.is_admin || false,
+            familyId: data.family_id || null,
+            needsPasswordChange: data.needs_password_change || false
+          });
+        }
+      } else {
+        const data = await response.json();
+        if (data) {
+          setProfile({
+            id: userId,
+            username: data.username,
+            avatarUrl: data.avatar_url,
+            isAdmin: data.is_admin || false,
+            familyId: data.family_id || null,
+            needsPasswordChange: data.needs_password_change || false
+          });
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      setProfile(null);
+      // Try direct Supabase as final fallback
+      try {
+        let { data, error: fallbackError } = await supabase
+          .from('profiles')
+          .select('username, avatar_url, is_admin, family_id, needs_password_change')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (!fallbackError && data) {
+          setProfile({
+            id: userId,
+            username: data.username,
+            avatarUrl: data.avatar_url,
+            isAdmin: data.is_admin || false,
+            familyId: data.family_id || null,
+            needsPasswordChange: data.needs_password_change || false
+          });
+        } else {
+          setProfile(null);
+        }
+      } catch (fallbackErr) {
+        console.error('Fallback profile fetch also failed:', fallbackErr);
+        setProfile(null);
+      }
     } finally {
       setLoading(false);
     }
