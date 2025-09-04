@@ -283,9 +283,6 @@ export default function Family() {
 
       if (inviteError) throw inviteError;
 
-      // Generate magic link
-      const magicLink = `${window.location.origin}/join?token=${invitation.invite_token}`;
-      
       // Don't auto-copy, just show success message
       showToast('Magic link created! Copy the link from the invitations list below.')
       
