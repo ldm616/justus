@@ -283,8 +283,8 @@ export default function Family() {
 
       if (inviteError) throw inviteError;
 
-      // Don't auto-copy, just show success message
-      showToast('Magic link created! Copy the link from the invitations list below.')
+      // Auto-open the "How it works" section instead of showing a toast
+      setShowHowItWorks(true);
       
       setInvitations([invitation, ...invitations]);
       setShowInviteModal(false);
