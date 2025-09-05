@@ -1,10 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 
-// EXACTLY like photos.js - use service key
-const supabase = createClient(
+// Create two clients: one for auth validation, one for data operations
+const serviceClient = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
+
+// Helper to create client with user's JWT for RLS
+function createUserClient(token) {
+  return createClient(
+    process.env.VITE_SUPABASE_URL,
+    process.env.VITE_SUPABASE_ANON_KEY,
+    {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    }
+  );
+}
 
 export async function handler(event, context) {
   const { headers, httpMethod, body, queryStringParameters } = event;
@@ -17,13 +28,17 @@ export async function handler(event, context) {
     };
   }
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+  // Use service client to validate token
+  const { data: { user }, error: userError } = await serviceClient.auth.getUser(token);
   if (userError || !user) {
     return {
       statusCode: 401,
       body: JSON.stringify({ error: 'Invalid token' })
     };
   }
+
+  // Create user-scoped client for RLS operations
+  const userClient = createUserClient(token);
 
   try {
     switch (httpMethod) {
@@ -36,9 +51,9 @@ export async function handler(event, context) {
           };
         }
 
-        const { data: comments, error } = await supabase
-          .from('photo_comments')
-          .select('*')
+        const { data: comments, error } = await userClient
+          .from('comments')  // Changed from photo_comments
+          .select('id, photo_id, user_id, body, created_at, updated_at')
           .eq('photo_id', photo_id)
           .order('created_at', { ascending: false });
 
@@ -60,12 +75,13 @@ export async function handler(event, context) {
           };
         }
 
-        const { data: newComment, error } = await supabase
-          .from('photo_comments')
+        // Don't set family_id - trigger will handle it
+        const { data: newComment, error } = await userClient
+          .from('comments')  // Changed from photo_comments
           .insert({
             photo_id,
             user_id: user.id,
-            comment: comment.trim()
+            body: comment.trim()  // Changed from comment to body
           })
           .select()
           .single();
@@ -88,11 +104,11 @@ export async function handler(event, context) {
           };
         }
 
-        const { data: updatedComment, error } = await supabase
-          .from('photo_comments')
+        const { data: updatedComment, error } = await userClient
+          .from('comments')  // Changed from photo_comments
           .update({
-            comment: comment.trim(),
-            edited_at: new Date().toISOString()
+            body: comment.trim()  // Changed from comment to body
+            // updated_at is handled by trigger
           })
           .eq('id', comment_id)
           .eq('user_id', user.id)
@@ -124,8 +140,8 @@ export async function handler(event, context) {
           };
         }
 
-        const { error } = await supabase
-          .from('photo_comments')
+        const { error } = await userClient
+          .from('comments')  // Changed from photo_comments
           .delete()
           .eq('id', comment_id)
           .eq('user_id', user.id);

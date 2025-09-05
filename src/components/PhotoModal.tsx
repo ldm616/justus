@@ -21,8 +21,8 @@ interface Comment {
   id: string;
   photo_id: string;
   user_id: string;
-  comment: string;
-  edited_at: string | null;
+  body: string;  // Changed from comment to body
+  updated_at: string | null;  // Changed from edited_at to updated_at
   created_at: string;
 }
 
@@ -170,7 +170,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
 
       setComments(comments.map(c => 
         c.id === commentId 
-          ? { ...c, comment: editingCommentText.trim(), edited_at: new Date().toISOString() }
+          ? { ...c, body: editingCommentText.trim(), updated_at: new Date().toISOString() }
           : c
       ));
       setEditingCommentId(null);
@@ -353,20 +353,20 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                                   {comment.user_id === profile?.id ? profile.username : 'User'}
                                 </span>
                                 <span className="font-normal">
-                                  {comment.comment}
+                                  {comment.body}
                                 </span>
                               </div>
                               <div className="flex items-center gap-3 mt-1">
                                 <span className="text-xs text-gray-400">
                                   {formatTimeAgo(comment.created_at)}
-                                  {comment.edited_at && ' (edited)'}
+                                  {comment.updated_at && ' (edited)'}
                                 </span>
                                 {comment.user_id === profile?.id && (
                                   <div className="flex gap-2">
                                     <button
                                       onClick={() => {
                                         setEditingCommentId(comment.id);
-                                        setEditingCommentText(comment.comment);
+                                        setEditingCommentText(comment.body);
                                       }}
                                       className="text-xs text-gray-400 hover:text-gray-300"
                                     >
