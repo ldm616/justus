@@ -12,36 +12,20 @@ export async function handler(event, context) {
     };
   }
 
-  // First, create a client with anon key to verify the user
-  const anonClient = createClient(
+  // Create a single client with anon key
+  const supabase = createClient(
     process.env.VITE_SUPABASE_URL,
     process.env.VITE_SUPABASE_ANON_KEY
   );
 
   // Verify the token is valid
-  const { data: { user }, error: userError } = await anonClient.auth.getUser(token);
+  const { data: { user }, error: userError } = await supabase.auth.getUser(token);
   if (userError || !user) {
     return {
       statusCode: 401,
       body: JSON.stringify({ error: 'Invalid token' })
     };
   }
-
-  // Now create a service client that bypasses RLS
-  // If no service key, use anon key with RLS bypass disabled
-  const supabase = createClient(
-    process.env.VITE_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY,
-    {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false
-      },
-      db: {
-        schema: 'public'
-      }
-    }
-  );
 
   try {
     switch (httpMethod) {
@@ -55,38 +39,13 @@ export async function handler(event, context) {
           };
         }
 
-        // First check if user can access this photo (same family check)
-        const { data: photo } = await supabase
-          .from('photos')
-          .select('family_id')
-          .eq('id', photo_id)
-          .single();
+        console.log('Fetching comments for photo:', photo_id);
+        console.log('User:', user.id);
 
-        if (photo) {
-          const { data: userProfile } = await supabase
-            .from('profiles')
-            .select('family_id')
-            .eq('id', user.id)
-            .single();
-
-          if (!userProfile || userProfile.family_id !== photo.family_id) {
-            return {
-              statusCode: 403,
-              body: JSON.stringify({ error: 'Cannot access photos from other families' })
-            };
-          }
-        }
-
-        // Get comments with user profiles embedded
+        // Try the simplest possible query first
         const { data: comments, error } = await supabase
           .from('photo_comments')
-          .select(`
-            *,
-            profiles!photo_comments_user_id_fkey (
-              username,
-              avatar_url
-            )
-          `)
+          .select('*')
           .eq('photo_id', photo_id)
           .order('created_at', { ascending: false });
 
@@ -94,7 +53,39 @@ export async function handler(event, context) {
           console.error('Error fetching comments:', error);
           return {
             statusCode: 500,
-            body: JSON.stringify({ error: error.message })
+            body: JSON.stringify({ 
+              error: error.message,
+              code: error.code,
+              details: error.details 
+            })
+          };
+        }
+
+        // Now get the profiles separately
+        if (comments && comments.length > 0) {
+          const userIds = [...new Set(comments.map(c => c.user_id))];
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url')
+            .in('id', userIds);
+
+          // Map profiles to comments
+          const profileMap = {};
+          if (profiles) {
+            profiles.forEach(p => {
+              profileMap[p.id] = p;
+            });
+          }
+
+          // Add profile data to comments
+          const commentsWithProfiles = comments.map(c => ({
+            ...c,
+            profiles: profileMap[c.user_id] || null
+          }));
+
+          return {
+            statusCode: 200,
+            body: JSON.stringify(commentsWithProfiles)
           };
         }
 
@@ -115,28 +106,6 @@ export async function handler(event, context) {
           };
         }
 
-        // Check if photo is in user's family
-        const { data: photo } = await supabase
-          .from('photos')
-          .select('family_id')
-          .eq('id', photo_id)
-          .single();
-
-        if (photo) {
-          const { data: userProfile } = await supabase
-            .from('profiles')
-            .select('family_id')
-            .eq('id', user.id)
-            .single();
-
-          if (!userProfile || userProfile.family_id !== photo.family_id) {
-            return {
-              statusCode: 403,
-              body: JSON.stringify({ error: 'Cannot comment on photos from other families' })
-            };
-          }
-        }
-
         // Insert comment
         const { data: newComment, error } = await supabase
           .from('photo_comments')
@@ -145,26 +114,34 @@ export async function handler(event, context) {
             user_id: user.id,
             comment: comment.trim()
           })
-          .select(`
-            *,
-            profiles!photo_comments_user_id_fkey (
-              username,
-              avatar_url
-            )
-          `)
+          .select()
           .single();
 
         if (error) {
           console.error('Error adding comment:', error);
           return {
             statusCode: 500,
-            body: JSON.stringify({ error: error.message })
+            body: JSON.stringify({ 
+              error: error.message,
+              code: error.code,
+              details: error.details 
+            })
           };
         }
 
+        // Get the user's profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('id', user.id)
+          .single();
+
         return {
           statusCode: 200,
-          body: JSON.stringify(newComment)
+          body: JSON.stringify({
+            ...newComment,
+            profiles: profile || null
+          })
         };
       }
 
@@ -179,21 +156,7 @@ export async function handler(event, context) {
           };
         }
 
-        // First check if user owns this comment
-        const { data: existingComment } = await supabase
-          .from('photo_comments')
-          .select('user_id')
-          .eq('id', comment_id)
-          .single();
-
-        if (!existingComment || existingComment.user_id !== user.id) {
-          return {
-            statusCode: 403,
-            body: JSON.stringify({ error: 'You can only edit your own comments' })
-          };
-        }
-
-        // Update comment
+        // Update comment - let RLS handle ownership check
         const { data: updatedComment, error } = await supabase
           .from('photo_comments')
           .update({
@@ -201,26 +164,42 @@ export async function handler(event, context) {
             edited_at: new Date().toISOString()
           })
           .eq('id', comment_id)
-          .select(`
-            *,
-            profiles!photo_comments_user_id_fkey (
-              username,
-              avatar_url
-            )
-          `)
+          .eq('user_id', user.id) // Only update if user owns it
+          .select()
           .single();
 
         if (error) {
           console.error('Error updating comment:', error);
           return {
             statusCode: 500,
-            body: JSON.stringify({ error: error.message })
+            body: JSON.stringify({ 
+              error: error.message,
+              code: error.code,
+              details: error.details 
+            })
           };
         }
 
+        if (!updatedComment) {
+          return {
+            statusCode: 404,
+            body: JSON.stringify({ error: 'Comment not found or not yours' })
+          };
+        }
+
+        // Get the user's profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('id', user.id)
+          .single();
+
         return {
           statusCode: 200,
-          body: JSON.stringify(updatedComment)
+          body: JSON.stringify({
+            ...updatedComment,
+            profiles: profile || null
+          })
         };
       }
 
@@ -235,31 +214,22 @@ export async function handler(event, context) {
           };
         }
 
-        // First check if user owns this comment
-        const { data: existingComment } = await supabase
-          .from('photo_comments')
-          .select('user_id')
-          .eq('id', comment_id)
-          .single();
-
-        if (!existingComment || existingComment.user_id !== user.id) {
-          return {
-            statusCode: 403,
-            body: JSON.stringify({ error: 'You can only delete your own comments' })
-          };
-        }
-
-        // Delete comment
+        // Delete comment - let RLS handle ownership check
         const { error } = await supabase
           .from('photo_comments')
           .delete()
-          .eq('id', comment_id);
+          .eq('id', comment_id)
+          .eq('user_id', user.id); // Only delete if user owns it
 
         if (error) {
           console.error('Error deleting comment:', error);
           return {
             statusCode: 500,
-            body: JSON.stringify({ error: error.message })
+            body: JSON.stringify({ 
+              error: error.message,
+              code: error.code,
+              details: error.details 
+            })
           };
         }
 
