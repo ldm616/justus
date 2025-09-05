@@ -1,6 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
 export async function handler(event, context) {
+  const { headers, httpMethod, body, queryStringParameters } = event;
+  
+  console.log('Comments function called:', { 
+    method: httpMethod,
+    hasServiceKey: !!process.env.SUPABASE_SERVICE_KEY,
+    hasUrl: !!process.env.VITE_SUPABASE_URL,
+    hasAnonKey: !!process.env.VITE_SUPABASE_ANON_KEY
+  });
+
   // Check if service key is available
   if (!process.env.SUPABASE_SERVICE_KEY) {
     console.error('SUPABASE_SERVICE_KEY not configured');
@@ -12,36 +21,54 @@ export async function handler(event, context) {
     };
   }
 
-  const supabase = createClient(
+  // Create admin client with service key that bypasses RLS
+  const supabaseAdmin = createClient(
     process.env.VITE_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY // Service key bypasses RLS
+    process.env.SUPABASE_SERVICE_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
   );
-  const { headers, httpMethod, body, queryStringParameters } = event;
+
+  // Create a separate client just for auth verification
+  const supabaseAuth = createClient(
+    process.env.VITE_SUPABASE_URL,
+    process.env.VITE_SUPABASE_ANON_KEY
+  );
 
   // Get the user's token from the Authorization header
   const token = headers.authorization?.replace('Bearer ', '');
   if (!token) {
+    console.log('No authorization token provided');
     return {
       statusCode: 401,
       body: JSON.stringify({ error: 'No authorization token' })
     };
   }
 
-  // Verify the user with their token
-  const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+  // Verify the user with their token using the anon client
+  const { data: { user }, error: userError } = await supabaseAuth.auth.getUser(token);
   if (userError || !user) {
+    console.error('Invalid token:', userError);
     return {
       statusCode: 401,
       body: JSON.stringify({ error: 'Invalid token' })
     };
   }
 
-  // Get user's profile and family_id
-  const { data: profile } = await supabase
+  console.log('User verified:', user.id);
+
+  // Get user's profile and family_id using admin client
+  const { data: profile } = await supabaseAdmin
     .from('profiles')
     .select('id, family_id, username, avatar_url')
     .eq('id', user.id)
     .single();
+
+  console.log('User profile:', { userId: user.id, familyId: profile?.family_id });
 
   if (!profile?.family_id) {
     return {
@@ -62,22 +89,25 @@ export async function handler(event, context) {
           };
         }
 
-        // First check if user can see this photo (same family)
-        const { data: photo } = await supabase
+        console.log('Getting comments for photo:', photo_id);
+
+        // First check if user can see this photo (same family) using admin client
+        const { data: photo } = await supabaseAdmin
           .from('photos')
           .select('id, family_id')
           .eq('id', photo_id)
           .single();
 
         if (!photo || photo.family_id !== profile.family_id) {
+          console.log('Photo access denied:', { photoFamily: photo?.family_id, userFamily: profile.family_id });
           return {
             statusCode: 403,
             body: JSON.stringify({ error: 'Cannot access this photo' })
           };
         }
 
-        // Get comments with user profiles
-        const { data: comments, error } = await supabase
+        // Get comments with user profiles using admin client
+        const { data: comments, error } = await supabaseAdmin
           .from('photo_comments')
           .select(`
             *,
@@ -89,7 +119,12 @@ export async function handler(event, context) {
           .eq('photo_id', photo_id)
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching comments:', error);
+          throw error;
+        }
+
+        console.log(`Found ${comments?.length || 0} comments`);
 
         return {
           statusCode: 200,
@@ -108,8 +143,8 @@ export async function handler(event, context) {
           };
         }
 
-        // Check if user can see this photo
-        const { data: photo } = await supabase
+        // Check if user can see this photo using admin client
+        const { data: photo } = await supabaseAdmin
           .from('photos')
           .select('id, family_id')
           .eq('id', photo_id)
@@ -122,8 +157,10 @@ export async function handler(event, context) {
           };
         }
 
-        // Insert comment
-        const { data: newComment, error } = await supabase
+        console.log('Adding comment to photo:', photo_id);
+
+        // Insert comment using admin client
+        const { data: newComment, error } = await supabaseAdmin
           .from('photo_comments')
           .insert({
             photo_id,
@@ -139,7 +176,10 @@ export async function handler(event, context) {
           `)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error adding comment:', error);
+          throw error;
+        }
 
         return {
           statusCode: 200,
@@ -158,8 +198,8 @@ export async function handler(event, context) {
           };
         }
 
-        // Update only if user owns the comment
-        const { data: updatedComment, error } = await supabase
+        // Update only if user owns the comment using admin client
+        const { data: updatedComment, error } = await supabaseAdmin
           .from('photo_comments')
           .update({
             comment: comment.trim(),
@@ -195,8 +235,8 @@ export async function handler(event, context) {
           };
         }
 
-        // Delete only if user owns the comment
-        const { error } = await supabase
+        // Delete only if user owns the comment using admin client
+        const { error } = await supabaseAdmin
           .from('photo_comments')
           .delete()
           .eq('id', comment_id)
