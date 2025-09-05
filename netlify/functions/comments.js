@@ -46,6 +46,41 @@ export async function handler(event, context) {
           };
         }
 
+        // Debug: Log the request details
+        console.log('=== COMMENTS DEBUG ===');
+        console.log('User ID:', user.id);
+        console.log('Photo ID:', photo_id);
+        
+        // First, get the user's family_id
+        const { data: userProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('family_id')
+          .eq('id', user.id)
+          .single();
+        
+        console.log('User Profile:', userProfile);
+        console.log('User Family ID:', userProfile?.family_id);
+        
+        // Get the photo's family_id
+        const { data: photo, error: photoError } = await supabase
+          .from('photos')
+          .select('family_id')
+          .eq('id', photo_id)
+          .single();
+        
+        console.log('Photo:', photo);
+        console.log('Photo Family ID:', photo?.family_id);
+        
+        // SQL query being executed
+        const sqlQuery = `
+          SELECT pc.*, p.username, p.avatar_url 
+          FROM photo_comments pc
+          LEFT JOIN profiles p ON pc.user_id = p.id
+          WHERE pc.photo_id = '${photo_id}'
+          ORDER BY pc.created_at DESC
+        `;
+        console.log('SQL Query (equivalent):', sqlQuery);
+
         // Get comments with user profiles embedded
         const { data: comments, error } = await supabase
           .from('photo_comments')
@@ -61,11 +96,18 @@ export async function handler(event, context) {
 
         if (error) {
           console.error('Error fetching comments:', error);
+          console.error('Error code:', error.code);
+          console.error('Error message:', error.message);
+          console.error('Error details:', error.details);
+          console.error('Error hint:', error.hint);
           return {
             statusCode: error.code === '42501' ? 403 : 500,
             body: JSON.stringify({ error: error.message })
           };
         }
+
+        console.log('Comments found:', comments?.length || 0);
+        console.log('=== END DEBUG ===');
 
         return {
           statusCode: 200,
