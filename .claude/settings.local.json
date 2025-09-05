@@ -46,7 +46,13 @@
       "Bash(open clear-auth.html)",
       "Bash(git revert:*)",
       "Bash(curl:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/components/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/lib/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/src/lib/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/supabase/migrations/**)",
+      "Read(/Users/malcolmlewis/Documents/Repos/2doozy/supabase/migrations/**)"
     ],
     "deny": [],
     "ask": []
