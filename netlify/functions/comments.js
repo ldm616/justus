@@ -12,27 +12,36 @@ export async function handler(event, context) {
     };
   }
 
-  // Create client with anon key and user's token
-  const supabase = createClient(
+  // First, create a client with anon key to verify the user
+  const anonClient = createClient(
     process.env.VITE_SUPABASE_URL,
-    process.env.VITE_SUPABASE_ANON_KEY,
-    {
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    }
+    process.env.VITE_SUPABASE_ANON_KEY
   );
 
   // Verify the token is valid
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const { data: { user }, error: userError } = await anonClient.auth.getUser(token);
   if (userError || !user) {
     return {
       statusCode: 401,
       body: JSON.stringify({ error: 'Invalid token' })
     };
   }
+
+  // Now create a service client that bypasses RLS
+  // If no service key, use anon key with RLS bypass disabled
+  const supabase = createClient(
+    process.env.VITE_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      },
+      db: {
+        schema: 'public'
+      }
+    }
+  );
 
   try {
     switch (httpMethod) {
@@ -46,47 +55,34 @@ export async function handler(event, context) {
           };
         }
 
-        // Debug: Log the request details
-        console.log('=== COMMENTS DEBUG ===');
-        console.log('User ID:', user.id);
-        console.log('Photo ID:', photo_id);
-        
-        // First, get the user's family_id
-        const { data: userProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('family_id')
-          .eq('id', user.id)
-          .single();
-        
-        console.log('User Profile:', userProfile);
-        console.log('User Family ID:', userProfile?.family_id);
-        
-        // Get the photo's family_id
-        const { data: photo, error: photoError } = await supabase
+        // First check if user can access this photo (same family check)
+        const { data: photo } = await supabase
           .from('photos')
           .select('family_id')
           .eq('id', photo_id)
           .single();
-        
-        console.log('Photo:', photo);
-        console.log('Photo Family ID:', photo?.family_id);
-        
-        // SQL query being executed
-        const sqlQuery = `
-          SELECT pc.*, p.username, p.avatar_url 
-          FROM photo_comments pc
-          LEFT JOIN profiles p ON pc.user_id = p.id
-          WHERE pc.photo_id = '${photo_id}'
-          ORDER BY pc.created_at DESC
-        `;
-        console.log('SQL Query (equivalent):', sqlQuery);
+
+        if (photo) {
+          const { data: userProfile } = await supabase
+            .from('profiles')
+            .select('family_id')
+            .eq('id', user.id)
+            .single();
+
+          if (!userProfile || userProfile.family_id !== photo.family_id) {
+            return {
+              statusCode: 403,
+              body: JSON.stringify({ error: 'Cannot access photos from other families' })
+            };
+          }
+        }
 
         // Get comments with user profiles embedded
         const { data: comments, error } = await supabase
           .from('photo_comments')
           .select(`
             *,
-            profiles (
+            profiles!photo_comments_user_id_fkey (
               username,
               avatar_url
             )
@@ -96,18 +92,11 @@ export async function handler(event, context) {
 
         if (error) {
           console.error('Error fetching comments:', error);
-          console.error('Error code:', error.code);
-          console.error('Error message:', error.message);
-          console.error('Error details:', error.details);
-          console.error('Error hint:', error.hint);
           return {
-            statusCode: error.code === '42501' ? 403 : 500,
+            statusCode: 500,
             body: JSON.stringify({ error: error.message })
           };
         }
-
-        console.log('Comments found:', comments?.length || 0);
-        console.log('=== END DEBUG ===');
 
         return {
           statusCode: 200,
@@ -126,6 +115,28 @@ export async function handler(event, context) {
           };
         }
 
+        // Check if photo is in user's family
+        const { data: photo } = await supabase
+          .from('photos')
+          .select('family_id')
+          .eq('id', photo_id)
+          .single();
+
+        if (photo) {
+          const { data: userProfile } = await supabase
+            .from('profiles')
+            .select('family_id')
+            .eq('id', user.id)
+            .single();
+
+          if (!userProfile || userProfile.family_id !== photo.family_id) {
+            return {
+              statusCode: 403,
+              body: JSON.stringify({ error: 'Cannot comment on photos from other families' })
+            };
+          }
+        }
+
         // Insert comment
         const { data: newComment, error } = await supabase
           .from('photo_comments')
@@ -136,7 +147,7 @@ export async function handler(event, context) {
           })
           .select(`
             *,
-            profiles (
+            profiles!photo_comments_user_id_fkey (
               username,
               avatar_url
             )
@@ -146,7 +157,7 @@ export async function handler(event, context) {
         if (error) {
           console.error('Error adding comment:', error);
           return {
-            statusCode: error.code === '42501' ? 403 : 500,
+            statusCode: 500,
             body: JSON.stringify({ error: error.message })
           };
         }
@@ -168,7 +179,21 @@ export async function handler(event, context) {
           };
         }
 
-        // Update only if user owns it
+        // First check if user owns this comment
+        const { data: existingComment } = await supabase
+          .from('photo_comments')
+          .select('user_id')
+          .eq('id', comment_id)
+          .single();
+
+        if (!existingComment || existingComment.user_id !== user.id) {
+          return {
+            statusCode: 403,
+            body: JSON.stringify({ error: 'You can only edit your own comments' })
+          };
+        }
+
+        // Update comment
         const { data: updatedComment, error } = await supabase
           .from('photo_comments')
           .update({
@@ -178,7 +203,7 @@ export async function handler(event, context) {
           .eq('id', comment_id)
           .select(`
             *,
-            profiles (
+            profiles!photo_comments_user_id_fkey (
               username,
               avatar_url
             )
@@ -188,15 +213,8 @@ export async function handler(event, context) {
         if (error) {
           console.error('Error updating comment:', error);
           return {
-            statusCode: error.code === '42501' ? 403 : 500,
+            statusCode: 500,
             body: JSON.stringify({ error: error.message })
-          };
-        }
-        
-        if (!updatedComment) {
-          return {
-            statusCode: 404,
-            body: JSON.stringify({ error: 'Comment not found or not yours' })
           };
         }
 
@@ -217,7 +235,21 @@ export async function handler(event, context) {
           };
         }
 
-        // Delete only if user owns it
+        // First check if user owns this comment
+        const { data: existingComment } = await supabase
+          .from('photo_comments')
+          .select('user_id')
+          .eq('id', comment_id)
+          .single();
+
+        if (!existingComment || existingComment.user_id !== user.id) {
+          return {
+            statusCode: 403,
+            body: JSON.stringify({ error: 'You can only delete your own comments' })
+          };
+        }
+
+        // Delete comment
         const { error } = await supabase
           .from('photo_comments')
           .delete()
@@ -226,7 +258,7 @@ export async function handler(event, context) {
         if (error) {
           console.error('Error deleting comment:', error);
           return {
-            statusCode: error.code === '42501' ? 403 : 500,
+            statusCode: 500,
             body: JSON.stringify({ error: error.message })
           };
         }
