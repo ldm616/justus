@@ -198,25 +198,25 @@ export default function Family() {
     try {
       setLoading(true);
 
-      // Create family
-      const { data: familyData, error: familyError } = await supabase
-        .from('families')
-        .insert({
-          name: familyName.trim(),
-          created_by: profile?.id
-        })
-        .select()
-        .single();
+      // Create family via Netlify function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session');
 
-      if (familyError) throw familyError;
+      const response = await fetch('/.netlify/functions/families', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: familyName.trim() })
+      });
 
-      // Update user's profile with family_id
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ family_id: familyData.id })
-        .eq('id', profile?.id);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create family');
+      }
 
-      if (updateError) throw updateError;
+      const familyData = await response.json();
 
       // Update the profile in context
       await updateProfile({ familyId: familyData.id });
