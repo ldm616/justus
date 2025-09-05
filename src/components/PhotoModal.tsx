@@ -155,11 +155,11 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
       setComments([data, ...comments]);
       
       // Add current user's profile if not already in map
-      if (profile && !profiles[profile.id]) {
-        setProfiles({
-          ...profiles,
+      if (profile && profile.id && !profiles[profile.id]) {
+        setProfiles(prev => ({
+          ...prev,
           [profile.id]: { username: profile.username || 'Anonymous', avatar_url: profile.avatarUrl }
-        });
+        }));
       }
       
       setNewComment('');
