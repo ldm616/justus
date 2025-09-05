@@ -12,6 +12,21 @@ export async function handler(event, context) {
     };
   }
 
+  // Check if environment variables exist
+  if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_ANON_KEY) {
+    console.error('Missing environment variables:', {
+      url: !!process.env.VITE_SUPABASE_URL,
+      key: !!process.env.VITE_SUPABASE_ANON_KEY
+    });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ 
+        error: 'Server configuration error',
+        details: 'Missing Supabase environment variables'
+      })
+    };
+  }
+
   // Create a single client with anon key
   const supabase = createClient(
     process.env.VITE_SUPABASE_URL,
@@ -21,9 +36,13 @@ export async function handler(event, context) {
   // Verify the token is valid
   const { data: { user }, error: userError } = await supabase.auth.getUser(token);
   if (userError || !user) {
+    console.error('Auth error:', userError);
     return {
       statusCode: 401,
-      body: JSON.stringify({ error: 'Invalid token' })
+      body: JSON.stringify({ 
+        error: 'Invalid token',
+        details: userError?.message
+      })
     };
   }
 
@@ -46,10 +65,20 @@ export async function handler(event, context) {
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.error('Error fetching comments:', error);
+          console.error('Error fetching comments:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            status: error.status
+          });
           return {
             statusCode: 500,
-            body: JSON.stringify({ error: error.message })
+            body: JSON.stringify({ 
+              error: error.message,
+              code: error.code,
+              details: error.details
+            })
           };
         }
 
