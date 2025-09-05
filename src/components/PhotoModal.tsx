@@ -24,10 +24,6 @@ interface Comment {
   comment: string;
   edited_at: string | null;
   created_at: string;
-  profiles?: {
-    username: string;
-    avatar_url: string | null;
-  };
 }
 
 // interface PhotoTag {
@@ -320,14 +316,8 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                   <div className="space-y-3">
                     {comments.map(comment => (
                       <div key={comment.id} className="flex gap-3">
-                        {comment.profiles?.avatar_url ? (
-                          <img 
-                            src={comment.profiles.avatar_url}
-                            className="w-8 h-8 rounded-full flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-gray-700 flex-shrink-0" />
-                        )}
+                        {/* For now, just show a placeholder avatar */}
+                        <div className="w-8 h-8 rounded-full bg-gray-700 flex-shrink-0" />
                         <div className="flex-1">
                           {editingCommentId === comment.id ? (
                             <div>
@@ -360,7 +350,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                             <div>
                               <div className="text-sm">
                                 <span className="font-semibold mr-2">
-                                  {comment.profiles?.username || 'Anonymous'}
+                                  {comment.user_id === profile?.id ? profile.username : 'User'}
                                 </span>
                                 <span className="font-normal">
                                   {comment.comment}

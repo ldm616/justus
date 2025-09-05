@@ -30,7 +30,6 @@ export async function handler(event, context) {
   try {
     switch (httpMethod) {
       case 'GET': {
-        // Get comments for a photo
         const { photo_id } = queryStringParameters;
         if (!photo_id) {
           return {
@@ -39,10 +38,7 @@ export async function handler(event, context) {
           };
         }
 
-        console.log('Fetching comments for photo:', photo_id);
-        console.log('User:', user.id);
-
-        // Try the simplest possible query first
+        // Just get the comments - no profiles needed
         const { data: comments, error } = await supabase
           .from('photo_comments')
           .select('*')
@@ -53,39 +49,7 @@ export async function handler(event, context) {
           console.error('Error fetching comments:', error);
           return {
             statusCode: 500,
-            body: JSON.stringify({ 
-              error: error.message,
-              code: error.code,
-              details: error.details 
-            })
-          };
-        }
-
-        // Now get the profiles separately
-        if (comments && comments.length > 0) {
-          const userIds = [...new Set(comments.map(c => c.user_id))];
-          const { data: profiles } = await supabase
-            .from('profiles')
-            .select('id, username, avatar_url')
-            .in('id', userIds);
-
-          // Map profiles to comments
-          const profileMap = {};
-          if (profiles) {
-            profiles.forEach(p => {
-              profileMap[p.id] = p;
-            });
-          }
-
-          // Add profile data to comments
-          const commentsWithProfiles = comments.map(c => ({
-            ...c,
-            profiles: profileMap[c.user_id] || null
-          }));
-
-          return {
-            statusCode: 200,
-            body: JSON.stringify(commentsWithProfiles)
+            body: JSON.stringify({ error: error.message })
           };
         }
 
@@ -96,7 +60,6 @@ export async function handler(event, context) {
       }
 
       case 'POST': {
-        // Add a comment
         const { photo_id, comment } = JSON.parse(body);
         
         if (!photo_id || !comment) {
@@ -106,7 +69,6 @@ export async function handler(event, context) {
           };
         }
 
-        // Insert comment
         const { data: newComment, error } = await supabase
           .from('photo_comments')
           .insert({
@@ -121,32 +83,17 @@ export async function handler(event, context) {
           console.error('Error adding comment:', error);
           return {
             statusCode: 500,
-            body: JSON.stringify({ 
-              error: error.message,
-              code: error.code,
-              details: error.details 
-            })
+            body: JSON.stringify({ error: error.message })
           };
         }
 
-        // Get the user's profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username, avatar_url')
-          .eq('id', user.id)
-          .single();
-
         return {
           statusCode: 200,
-          body: JSON.stringify({
-            ...newComment,
-            profiles: profile || null
-          })
+          body: JSON.stringify(newComment)
         };
       }
 
       case 'PATCH': {
-        // Update a comment
         const { comment_id, comment } = JSON.parse(body);
         
         if (!comment_id || !comment) {
@@ -156,7 +103,6 @@ export async function handler(event, context) {
           };
         }
 
-        // Update comment - let RLS handle ownership check
         const { data: updatedComment, error } = await supabase
           .from('photo_comments')
           .update({
@@ -164,7 +110,7 @@ export async function handler(event, context) {
             edited_at: new Date().toISOString()
           })
           .eq('id', comment_id)
-          .eq('user_id', user.id) // Only update if user owns it
+          .eq('user_id', user.id)
           .select()
           .single();
 
@@ -172,11 +118,7 @@ export async function handler(event, context) {
           console.error('Error updating comment:', error);
           return {
             statusCode: 500,
-            body: JSON.stringify({ 
-              error: error.message,
-              code: error.code,
-              details: error.details 
-            })
+            body: JSON.stringify({ error: error.message })
           };
         }
 
@@ -187,24 +129,13 @@ export async function handler(event, context) {
           };
         }
 
-        // Get the user's profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username, avatar_url')
-          .eq('id', user.id)
-          .single();
-
         return {
           statusCode: 200,
-          body: JSON.stringify({
-            ...updatedComment,
-            profiles: profile || null
-          })
+          body: JSON.stringify(updatedComment)
         };
       }
 
       case 'DELETE': {
-        // Delete a comment
         const { comment_id } = queryStringParameters;
         
         if (!comment_id) {
@@ -214,22 +145,17 @@ export async function handler(event, context) {
           };
         }
 
-        // Delete comment - let RLS handle ownership check
         const { error } = await supabase
           .from('photo_comments')
           .delete()
           .eq('id', comment_id)
-          .eq('user_id', user.id); // Only delete if user owns it
+          .eq('user_id', user.id);
 
         if (error) {
           console.error('Error deleting comment:', error);
           return {
             statusCode: 500,
-            body: JSON.stringify({ 
-              error: error.message,
-              code: error.code,
-              details: error.details 
-            })
+            body: JSON.stringify({ error: error.message })
           };
         }
 
