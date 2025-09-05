@@ -24,10 +24,8 @@ interface Comment {
   comment: string;
   edited_at: string | null;
   created_at: string;
-  profiles?: {
-    username: string;
-    avatar_url: string | null;
-  };
+  username?: string;
+  avatar_url?: string | null;
 }
 
 // interface PhotoTag {
@@ -49,6 +47,7 @@ interface PhotoModalProps {
 export default function PhotoModal({ photo, onClose, onReplace, uploading = false, isToday = false }: PhotoModalProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, { username: string; avatar_url: string | null }>>({});
   // const [tags, setTags] = useState<PhotoTag[]>([]);
   const [newComment, setNewComment] = useState('');
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -85,6 +84,23 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
 
       const data = await response.json();
       setComments(data || []);
+
+      // Load profiles for commenters
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map((c: Comment) => c.user_id))];
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', userIds);
+        
+        if (profileData) {
+          const profileMap: Record<string, { username: string; avatar_url: string | null }> = {};
+          profileData.forEach(p => {
+            profileMap[p.id] = { username: p.username, avatar_url: p.avatar_url };
+          });
+          setProfiles(profileMap);
+        }
+      }
     } catch (err) {
       console.error('Error loading comments:', err);
     } finally {
@@ -137,6 +153,15 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
 
       const data = await response.json();
       setComments([data, ...comments]);
+      
+      // Add current user's profile if not already in map
+      if (profile && !profiles[profile.id]) {
+        setProfiles({
+          ...profiles,
+          [profile.id]: { username: profile.username, avatar_url: profile.avatar_url }
+        });
+      }
+      
       setNewComment('');
       showToast('Comment added');
     } catch (err: any) {
@@ -251,6 +276,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
             alt={`Photo by ${photo.username || 'User'}`}
             className="w-full h-full object-contain"
             onLoad={() => setImageLoaded(true)}
+            onError={() => setImageLoaded(true)}
           />
         </div>
 
@@ -317,11 +343,13 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                   </div>
                 ) : comments.length > 0 ? (
                   <div className="space-y-3">
-                    {comments.map(comment => (
+                    {comments.map(comment => {
+                      const commenterProfile = profiles[comment.user_id];
+                      return (
                       <div key={comment.id} className="flex gap-3">
-                        {comment.profiles?.avatar_url ? (
+                        {commenterProfile?.avatar_url ? (
                           <img 
-                            src={comment.profiles.avatar_url}
+                            src={commenterProfile.avatar_url}
                             className="w-8 h-8 rounded-full flex-shrink-0"
                           />
                         ) : (
@@ -359,7 +387,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                             <div>
                               <div className="text-sm">
                                 <span className="font-semibold mr-2">
-                                  {comment.profiles?.username || 'Anonymous'}
+                                  {commenterProfile?.username || 'Anonymous'}
                                 </span>
                                 <span className="font-normal">
                                   {comment.comment}
@@ -394,7 +422,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
                           )}
                         </div>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 ) : null}
               </div>
