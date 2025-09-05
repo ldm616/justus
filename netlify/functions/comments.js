@@ -1,9 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
+// EXACTLY like photos.js - use service key
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
+
 export async function handler(event, context) {
   const { headers, httpMethod, body, queryStringParameters } = event;
 
-  // Get token from header
   const token = headers.authorization?.replace('Bearer ', '');
   if (!token) {
     return {
@@ -12,52 +17,13 @@ export async function handler(event, context) {
     };
   }
 
-  // Check if environment variables exist
-  if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_ANON_KEY) {
-    console.error('Missing environment variables:', {
-      url: !!process.env.VITE_SUPABASE_URL,
-      key: !!process.env.VITE_SUPABASE_ANON_KEY
-    });
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ 
-        error: 'Server configuration error',
-        details: 'Missing Supabase environment variables'
-      })
-    };
-  }
-
-  // Create client with the user's token passed through
-  const supabase = createClient(
-    process.env.VITE_SUPABASE_URL,
-    process.env.VITE_SUPABASE_ANON_KEY,
-    {
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      },
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false
-      }
-    }
-  );
-
-  // Verify the token is valid
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const { data: { user }, error: userError } = await supabase.auth.getUser(token);
   if (userError || !user) {
-    console.error('Auth error:', userError);
     return {
       statusCode: 401,
-      body: JSON.stringify({ 
-        error: 'Invalid token',
-        details: userError?.message
-      })
+      body: JSON.stringify({ error: 'Invalid token' })
     };
   }
-
-  console.log('Authenticated user:', user.id);
 
   try {
     switch (httpMethod) {
@@ -70,34 +36,13 @@ export async function handler(event, context) {
           };
         }
 
-        console.log('Fetching comments for photo:', photo_id);
-
-        // Just get the comments - no profiles needed
         const { data: comments, error } = await supabase
           .from('photo_comments')
           .select('*')
           .eq('photo_id', photo_id)
           .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching comments:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
-            status: error.status
-          });
-          return {
-            statusCode: 500,
-            body: JSON.stringify({ 
-              error: error.message,
-              code: error.code,
-              details: error.details
-            })
-          };
-        }
-
-        console.log('Comments found:', comments?.length || 0);
+        if (error) throw error;
 
         return {
           statusCode: 200,
@@ -125,13 +70,7 @@ export async function handler(event, context) {
           .select()
           .single();
 
-        if (error) {
-          console.error('Error adding comment:', error);
-          return {
-            statusCode: 500,
-            body: JSON.stringify({ error: error.message })
-          };
-        }
+        if (error) throw error;
 
         return {
           statusCode: 200,
@@ -160,13 +99,7 @@ export async function handler(event, context) {
           .select()
           .single();
 
-        if (error) {
-          console.error('Error updating comment:', error);
-          return {
-            statusCode: 500,
-            body: JSON.stringify({ error: error.message })
-          };
-        }
+        if (error) throw error;
 
         if (!updatedComment) {
           return {
@@ -197,13 +130,7 @@ export async function handler(event, context) {
           .eq('id', comment_id)
           .eq('user_id', user.id);
 
-        if (error) {
-          console.error('Error deleting comment:', error);
-          return {
-            statusCode: 500,
-            body: JSON.stringify({ error: error.message })
-          };
-        }
+        if (error) throw error;
 
         return {
           statusCode: 200,
