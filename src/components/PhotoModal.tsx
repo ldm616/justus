@@ -158,7 +158,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fals
       if (profile && !profiles[profile.id]) {
         setProfiles({
           ...profiles,
-          [profile.id]: { username: profile.username, avatar_url: profile.avatar_url }
+          [profile.id]: { username: profile.username || 'Anonymous', avatar_url: profile.avatarUrl }
         });
       }
       

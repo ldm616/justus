@@ -44,7 +44,9 @@
       "Bash(git reset:*)",
       "WebFetch(domain:supabase.com)",
       "Bash(open clear-auth.html)",
-      "Bash(git revert:*)"
+      "Bash(git revert:*)",
+      "Bash(curl:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
