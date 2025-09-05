@@ -27,14 +27,25 @@ export async function handler(event, context) {
     };
   }
 
-  // Create a single client with anon key
+  // Create client with the user's token passed through
   const supabase = createClient(
     process.env.VITE_SUPABASE_URL,
-    process.env.VITE_SUPABASE_ANON_KEY
+    process.env.VITE_SUPABASE_ANON_KEY,
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    }
   );
 
   // Verify the token is valid
-  const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) {
     console.error('Auth error:', userError);
     return {
@@ -46,6 +57,8 @@ export async function handler(event, context) {
     };
   }
 
+  console.log('Authenticated user:', user.id);
+
   try {
     switch (httpMethod) {
       case 'GET': {
@@ -56,6 +69,8 @@ export async function handler(event, context) {
             body: JSON.stringify({ error: 'photo_id required' })
           };
         }
+
+        console.log('Fetching comments for photo:', photo_id);
 
         // Just get the comments - no profiles needed
         const { data: comments, error } = await supabase
@@ -81,6 +96,8 @@ export async function handler(event, context) {
             })
           };
         }
+
+        console.log('Comments found:', comments?.length || 0);
 
         return {
           statusCode: 200,
