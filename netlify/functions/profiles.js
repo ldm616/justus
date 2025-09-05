@@ -28,13 +28,17 @@ export async function handler(event, context) {
     switch (httpMethod) {
       case 'GET': {
         // Get user's profile
+        console.log('Fetching profile for user:', user.id);
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching profile:', error);
+          throw error;
+        }
 
         return {
           statusCode: 200,
@@ -45,6 +49,7 @@ export async function handler(event, context) {
       case 'PUT': {
         // Update profile
         const updates = JSON.parse(body);
+        console.log('Updating profile for user:', user.id, 'with:', updates);
         
         // Ensure updating only own profile
         const { data: profile, error } = await supabase
@@ -54,7 +59,10 @@ export async function handler(event, context) {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error in profile operation:', error);
+          throw error;
+        }
 
         return {
           statusCode: 200,
@@ -65,6 +73,7 @@ export async function handler(event, context) {
       case 'POST': {
         // Create profile (for new users)
         const { username, avatar_url } = JSON.parse(body);
+        console.log('Creating profile for user:', user.id);
         
         const { data: profile, error } = await supabase
           .from('profiles')
@@ -76,7 +85,10 @@ export async function handler(event, context) {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error in profile operation:', error);
+          throw error;
+        }
 
         return {
           statusCode: 200,
@@ -92,9 +104,13 @@ export async function handler(event, context) {
     }
   } catch (error) {
     console.error('Profiles function error:', error);
+    console.error('Stack trace:', error.stack);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message })
+      body: JSON.stringify({ 
+        error: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      })
     };
   }
 }

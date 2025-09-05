@@ -80,7 +80,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Fallback to direct Supabase query if API fails
         let { data, error } = await supabase
           .from('profiles')
-          .select('username, avatar_url, is_admin, family_id, needs_password_change')
+          .select('username, avatar_url, is_admin, needs_password_change')
           .eq('id', userId)
           .maybeSingle();
 
@@ -88,25 +88,39 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw error;
         }
 
+        // Get family membership separately (family_id no longer in profiles)
+        const { data: membership } = await supabase
+          .from('family_members')
+          .select('family_id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
         if (data) {
           setProfile({
             id: userId,
             username: data.username,
             avatarUrl: data.avatar_url,
             isAdmin: data.is_admin || false,
-            familyId: data.family_id || null,
+            familyId: membership?.family_id || null,
             needsPasswordChange: data.needs_password_change || false
           });
         }
       } else {
         const data = await response.json();
         if (data) {
+          // Get family membership separately (family_id no longer in profiles)
+          const { data: membership } = await supabase
+            .from('family_members')
+            .select('family_id')
+            .eq('user_id', userId)
+            .maybeSingle();
+
           setProfile({
             id: userId,
             username: data.username,
             avatarUrl: data.avatar_url,
             isAdmin: data.is_admin || false,
-            familyId: data.family_id || null,
+            familyId: membership?.family_id || null,
             needsPasswordChange: data.needs_password_change || false
           });
         }
@@ -117,8 +131,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         let { data, error: fallbackError } = await supabase
           .from('profiles')
-          .select('username, avatar_url, is_admin, family_id, needs_password_change')
+          .select('username, avatar_url, is_admin, needs_password_change')
           .eq('id', userId)
+          .maybeSingle();
+
+        // Get family membership separately
+        const { data: membership } = await supabase
+          .from('family_members')
+          .select('family_id')
+          .eq('user_id', userId)
           .maybeSingle();
 
         if (!fallbackError && data) {
@@ -127,7 +148,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
             username: data.username,
             avatarUrl: data.avatar_url,
             isAdmin: data.is_admin || false,
-            familyId: data.family_id || null,
+            familyId: membership?.family_id || null,
             needsPasswordChange: data.needs_password_change || false
           });
         } else {
@@ -160,7 +181,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Only include fields that exist in the database
       if (updates.username !== undefined) dbUpdates.username = updates.username;
       if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl;
-      if (updates.familyId !== undefined) dbUpdates.family_id = updates.familyId;
+      // family_id no longer in profiles table - handle separately if needed
       if (updates.needsPasswordChange !== undefined) dbUpdates.needs_password_change = updates.needsPasswordChange;
 
       if (!existingProfile) {
