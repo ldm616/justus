@@ -6,6 +6,22 @@ export interface Profile {
   avatar_url?: string
 }
 
+export interface Family {
+  id: string
+  name: string
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+export interface FamilyMember {
+  id: string
+  family_id: string
+  user_id: string
+  role: 'admin' | 'member'
+  joined_at: string
+}
+
 export const auth = {
   async signup(email: string, password: string, username: string) {
     // Sign up the user
@@ -85,5 +101,51 @@ export const auth = {
     await auth.updateProfile(userId, { avatar_url: urlData.publicUrl })
     
     return urlData.publicUrl
+  },
+
+  async getUserFamily(userId: string) {
+    // Check if user has a family they created or are a member of
+    const { data, error } = await supabase
+      .from('family_members')
+      .select(`
+        family_id,
+        role,
+        families (
+          id,
+          name,
+          created_by,
+          created_at,
+          updated_at
+        )
+      `)
+      .eq('user_id', userId)
+      .single()
+    
+    if (error) {
+      // User doesn't have a family yet
+      if (error.code === 'PGRST116') return null
+      throw error
+    }
+    
+    return data
+  },
+
+  async getFamilyMembers(familyId: string) {
+    const { data, error } = await supabase
+      .from('family_members')
+      .select(`
+        *,
+        profiles (
+          id,
+          username,
+          avatar_url
+        )
+      `)
+      .eq('family_id', familyId)
+      .order('role', { ascending: false }) // Admins first
+      .order('joined_at', { ascending: true })
+    
+    if (error) throw error
+    return data
   }
 }
