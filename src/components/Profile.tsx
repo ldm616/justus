@@ -99,13 +99,16 @@ export default function Profile() {
             
             <h1 className="text-xl font-bold">Profile Settings</h1>
             
-            <button
-              onClick={handleLogout}
-              className="btn-secondary flex items-center gap-2"
-            >
-              <LogOut size={18} />
-              Logout
-            </button>
+            <div className="flex items-center gap-3">
+              {avatarPreview && (
+                <img
+                  src={avatarPreview}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              )}
+              <span className="text-gray-300">{username || user?.email}</span>
+            </div>
           </div>
         </div>
       </header>
@@ -204,6 +207,16 @@ export default function Profile() {
               className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Saving...' : 'Save Changes'}
+            </button>
+
+            {/* Logout Button */}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="btn-secondary w-full flex items-center justify-center gap-2"
+            >
+              <LogOut size={18} />
+              Log out
             </button>
           </form>
         </div>
