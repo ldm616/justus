@@ -28,8 +28,9 @@ BEGIN
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'username', NEW.email),
-    NEW.raw_user_meta_data->>'avatar_url'
-  );
+    NULL  -- Avatar will be updated separately after upload
+  )
+  ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

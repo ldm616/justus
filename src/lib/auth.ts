@@ -8,13 +8,26 @@ export interface Profile {
 
 export const auth = {
   async signup(email: string, password: string, username: string, avatarFile?: File) {
-    let avatarUrl = null
+    // First sign up the user
+    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username
+        }
+      }
+    })
+    
+    if (signUpError) throw signUpError
+    if (!authData.user) throw new Error('No user returned from signup')
     
     // Upload avatar if provided
+    let avatarUrl = null
     if (avatarFile) {
       const fileExt = avatarFile.name.split('.').pop()
       const fileName = `${crypto.randomUUID()}.${fileExt}`
-      const filePath = `${crypto.randomUUID()}/${fileName}`
+      const filePath = `${authData.user.id}/${fileName}`
       
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -25,23 +38,16 @@ export const auth = {
           .from('avatars')
           .getPublicUrl(filePath)
         avatarUrl = urlData.publicUrl
+        
+        // Update the profile with avatar URL
+        await supabase
+          .from('profiles')
+          .update({ avatar_url: avatarUrl })
+          .eq('id', authData.user.id)
       }
     }
     
-    // Sign up with Supabase Auth
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username,
-          avatar_url: avatarUrl
-        }
-      }
-    })
-    
-    if (error) throw error
-    return data
+    return authData
   },
   
   async login(email: string, password: string) {
