@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Camera, LogOut, Save, ArrowLeft } from 'lucide-react'
+import { Camera, LogOut, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { auth } from '../lib/auth'
 
@@ -21,8 +21,16 @@ export default function Profile() {
     if (profile) {
       setUsername(profile.username || '')
       setAvatarPreview(profile.avatar_url || null)
+    } else if (user) {
+      // If profile isn't loaded yet, try to fetch it
+      auth.getProfile(user.id).then(profileData => {
+        if (profileData) {
+          setUsername(profileData.username || '')
+          setAvatarPreview(profileData.avatar_url || null)
+        }
+      }).catch(console.error)
     }
-  }, [profile])
+  }, [profile, user])
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -157,6 +165,7 @@ export default function Profile() {
                 value={user?.email || ''}
                 className="input w-full bg-gray-800 cursor-not-allowed opacity-75"
                 disabled
+                readOnly
               />
               <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
             </div>
@@ -192,9 +201,8 @@ export default function Profile() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Save size={18} />
               {loading ? 'Saving...' : 'Save Changes'}
             </button>
           </form>
