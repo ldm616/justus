@@ -1,85 +1,62 @@
-import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { supabase } from './lib/supabaseClient';
-import { UserProvider } from './contexts/UserContext';
-import { ToastProvider } from './contexts/ToastContext';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import ResetPassword from './pages/ResetPassword';
-import Home from './pages/Home';
-import Profile from './pages/Profile';
-import Family from './pages/Family';
-import Join from './pages/Join';
+import React from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import Login from './components/Login'
+import Signup from './components/Signup'
+import Home from './components/Home'
 
-function AuthGuard({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Check current session immediately
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
+function PrivateRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth()
+  
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        <div className="text-xl">Loading...</div>
       </div>
-    );
+    )
   }
-
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
-
-  return <>{children}</>;
+  
+  return user ? <>{children}</> : <Navigate to="/login" />
 }
 
-export default function App() {
+function PublicRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth()
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Loading...</div>
+      </div>
+    )
+  }
+  
+  return !user ? <>{children}</> : <Navigate to="/" />
+}
+
+function App() {
   return (
     <BrowserRouter>
-      <UserProvider>
-        <ToastProvider>
-          <div className="min-h-screen bg-black">
-            <Header />
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/join" element={<Join />} />
-              <Route path="/" element={
-                <Home />
-              } />
-              <Route path="/profile" element={
-                <AuthGuard>
-                  <Profile />
-                </AuthGuard>
-              } />
-              <Route path="/family" element={
-                <AuthGuard>
-                  <Family />
-                </AuthGuard>
-              } />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-            <Footer />
-          </div>
-        </ToastProvider>
-      </UserProvider>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          } />
+          <Route path="/signup" element={
+            <PublicRoute>
+              <Signup />
+            </PublicRoute>
+          } />
+          <Route path="/" element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          } />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
-  );
+  )
 }
+
+export default App

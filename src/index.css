@@ -2,131 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Pulse animation for upload button */
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
-  }
-}
-
-.pulse-animation {
-  animation: pulse 1s infinite;
-}
-
 @layer base {
   body {
-    @apply bg-black;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: subpixel-antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    color: white;
-    min-height: 100vh;
-    font-size: 16px;
+    @apply bg-gray-900 text-white;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-gray-800 rounded-lg shadow-xl;
   }
   
-  @media (max-width: 767px) {
-    body {
-      font-size: 18px;
-    }
-  }
-  
-  h2 {
-    @apply text-xl font-semibold text-white;
-  }
-  
-  h3 {
-    @apply text-lg font-semibold text-white;
-  }
-  
-  /* Standardized text colors */
-  .text-muted {
-    @apply text-gray-400;
-  }
-  
-  /* Header styles */
-  .header-primary {
-    @apply bg-black;
-    height: 60px;
-  }
-  
-  @media (min-width: 768px) {
-    .header-primary {
-      height: 48px;
-    }
-  }
-  
-  /* Button styles from 2doozy */
   .btn-primary {
-    @apply px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors;
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors;
   }
   
   .btn-secondary {
-    @apply px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-md transition-colors;
+    @apply bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors;
   }
   
-  .btn-danger {
-    @apply px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors;
-  }
-  
-  /* Modal styles */
-  .modal-backdrop {
-    @apply fixed inset-0 bg-black/80 z-[60];
-  }
-  
-  .modal-content {
-    @apply bg-gray-900 rounded-lg shadow-xl;
-  }
-  
-  /* Form input styles */
-  .form-input {
-    @apply w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-white/50;
-  }
-  
-  /* Card styles */
-  .card {
-    @apply bg-gray-900 rounded-lg shadow-sm border border-gray-800;
-  }
-  
-  /* Avatar styles */
-  .avatar {
-    @apply rounded-full object-cover;
-  }
-  
-  .avatar-placeholder {
-    @apply rounded-full bg-gray-800 flex items-center justify-center;
-  }
-}
-
-@layer utilities {
-  /* Hide scrollbar utilities */
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-  
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  
-  /* Toast animation */
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-  
-  .animate-fade-in {
-    animation: fade-in 0.2s ease-out;
+  .input {
+    @apply bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
   }
 }
