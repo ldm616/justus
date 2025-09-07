@@ -95,6 +95,11 @@ const Signup: React.FC = () => {
       if (!avatar_url) throw new Error('Failed to get avatar URL');
 
       // 2) Sign up with both username AND avatar_url in metadata
+      console.log('Signing up with metadata:', { 
+        username: username.trim(), 
+        avatar_url: avatar_url 
+      });
+      
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -107,6 +112,7 @@ const Signup: React.FC = () => {
       });
 
       if (signUpError) {
+        console.error('Signup error:', signUpError);
         // Clean up temp avatar if signup fails
         await supabase.storage.from('avatars').remove([tempPath]);
         throw signUpError;

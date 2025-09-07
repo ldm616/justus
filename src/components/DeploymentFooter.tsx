@@ -16,7 +16,7 @@ export default function DeploymentFooter() {
   return (
     <div className="fixed bottom-0 left-0 right-0 text-center py-2">
       <p className="text-xs text-gray-400">
-        Deployed {deploymentTime}
+        Deployed {deploymentTime} | v2
       </p>
     </div>
   );
