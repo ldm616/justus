@@ -73,23 +73,6 @@ export default function Signup() {
 
             <div>
               <label className="block text-sm font-medium mb-2">
-                Username
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="input w-full"
-                required
-                minLength={3}
-                maxLength={20}
-                pattern="[a-zA-Z0-9_]+"
-                title="Username can only contain letters, numbers, and underscores"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">
                 Password
               </label>
               <div className="relative">
@@ -112,6 +95,23 @@ export default function Signup() {
               <p className="text-xs text-gray-400 mt-1">
                 Must be at least 6 characters
               </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Username
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="input w-full"
+                required
+                minLength={3}
+                maxLength={20}
+                pattern="[a-zA-Z0-9_]+"
+                title="Username can only contain letters, numbers, and underscores"
+              />
             </div>
 
             <button
