@@ -1,0 +1,184 @@
+--- CODE CHANGES REQUIRED ---
+This file contains the unified patches needed to align the code with the database changes.
+
+=== PATCH 1: Update Netlify comments function to use proper RLS authentication ===
+--- a/netlify/functions/comments.js
++++ b/netlify/functions/comments.js
+@@ -1,9 +1,21 @@
+ import { createClient } from '@supabase/supabase-js';
+ 
+-// EXACTLY like photos.js - use service key
+-const supabase = createClient(
+-  process.env.VITE_SUPABASE_URL,
+-  process.env.SUPABASE_SERVICE_KEY
+-);
++// Create two clients: one for auth validation, one for data operations
++const serviceClient = createClient(
++  process.env.VITE_SUPABASE_URL,
++  process.env.SUPABASE_SERVICE_KEY
++);
++
++// Helper to create client with user's JWT for RLS
++function createUserClient(token) {
++  return createClient(
++    process.env.VITE_SUPABASE_URL,
++    process.env.VITE_SUPABASE_ANON_KEY,
++    {
++      global: { headers: { Authorization: `Bearer ${token}` } }
++    }
++  );
++}
+ 
+ export async function handler(event, context) {
+   const { headers, httpMethod, body, queryStringParameters } = event;
+@@ -16,7 +28,8 @@ export async function handler(event, context) {
+     };
+   }
+ 
+-  const { data: { user }, error: userError } = await supabase.auth.getUser(token);
++  // Use service client to validate token
++  const { data: { user }, error: userError } = await serviceClient.auth.getUser(token);
+   if (userError || !user) {
+     return {
+       statusCode: 401,
+@@ -24,6 +37,9 @@ export async function handler(event, context) {
+     };
+   }
+ 
++  // Create user-scoped client for RLS operations
++  const userClient = createUserClient(token);
++
+   try {
+     switch (httpMethod) {
+       case 'GET': {
+@@ -35,9 +51,9 @@ export async function handler(event, context) {
+           };
+         }
+ 
+-        const { data: comments, error } = await supabase
+-          .from('photo_comments')
+-          .select('*')
++        const { data: comments, error } = await userClient
++          .from('comments')  // Changed from photo_comments
++          .select('id, photo_id, user_id, body, created_at, updated_at')
+           .eq('photo_id', photo_id)
+           .order('created_at', { ascending: false });
+ 
+@@ -58,12 +74,13 @@ export async function handler(event, context) {
+           };
+         }
+ 
+-        const { data: newComment, error } = await supabase
+-          .from('photo_comments')
++        // Don't set family_id - trigger will handle it
++        const { data: newComment, error } = await userClient
++          .from('comments')  // Changed from photo_comments
+           .insert({
+             photo_id,
+             user_id: user.id,
+-            comment: comment.trim()
++            body: comment.trim()  // Changed from comment to body
+           })
+           .select()
+           .single();
+@@ -86,11 +103,11 @@ export async function handler(event, context) {
+           };
+         }
+ 
+-        const { data: updatedComment, error } = await supabase
+-          .from('photo_comments')
++        const { data: updatedComment, error } = await userClient
++          .from('comments')  // Changed from photo_comments
+           .update({
+-            comment: comment.trim(),
+-            edited_at: new Date().toISOString()
++            body: comment.trim(),  // Changed from comment to body
++            // updated_at is handled by trigger
+           })
+           .eq('id', comment_id)
+           .eq('user_id', user.id)
+@@ -121,8 +138,8 @@ export async function handler(event, context) {
+           };
+         }
+ 
+-        const { error } = await supabase
+-          .from('photo_comments')
++        const { error } = await userClient
++          .from('comments')  // Changed from photo_comments
+           .delete()
+           .eq('id', comment_id)
+           .eq('user_id', user.id);
+
+=== PATCH 2: Update PhotoModal component to use new comments structure ===
+--- a/src/components/PhotoModal.tsx
++++ b/src/components/PhotoModal.tsx
+@@ -22,8 +22,8 @@ interface Comment {
+   id: string;
+   photo_id: string;
+   user_id: string;
+-  comment: string;
+-  edited_at: string | null;
++  body: string;  // Changed from comment to body
++  updated_at: string | null;  // Changed from edited_at to updated_at
+   created_at: string;
+ }
+ 
+@@ -170,7 +170,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fal
+ 
+       setComments(comments.map(c => 
+         c.id === commentId 
+-          ? { ...c, comment: editingCommentText.trim(), edited_at: new Date().toISOString() }
++          ? { ...c, body: editingCommentText.trim(), updated_at: new Date().toISOString() }
+           : c
+       ));
+       setEditingCommentId(null);
+@@ -323,7 +323,7 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fal
+                             <div>
+                               <textarea
+                                 value={editingCommentText}
+                                 onChange={(e) => setEditingCommentText(e.target.value)}
+                                 className="w-full bg-gray-800 rounded px-2 py-1 text-sm resize-none"
+                                 rows={2}
+                                 autoFocus
+@@ -353,13 +353,13 @@ export default function PhotoModal({ photo, onClose, onReplace, uploading = fal
+                                   {comment.user_id === profile?.id ? profile.username : 'User'}
+                                 </span>
+                                 <span className="font-normal">
+-                                  {comment.comment}
++                                  {comment.body}
+                                 </span>
+                               </div>
+                               <div className="flex items-center gap-3 mt-1">
+                                 <span className="text-xs text-gray-400">
+                                   {formatTimeAgo(comment.created_at)}
+-                                  {comment.edited_at && ' (edited)'}
++                                  {comment.updated_at && ' (edited)'}
+                                 </span>
+                                 {comment.user_id === profile?.id && (
+                                   <div className="flex gap-2">
+                                     <button
+                                       onClick={() => {
+                                         setEditingCommentId(comment.id);
+-                                        setEditingCommentText(comment.comment);
++                                        setEditingCommentText(comment.body);
+                                       }}
+                                       className="text-xs text-gray-400 hover:text-gray-300"
+                                     >
+
+=== APPLYING THE PATCHES ===
+
+To apply these changes:
+
+1. For the Netlify function (netlify/functions/comments.js):
+   - The function now creates two clients: service for auth, user for data
+   - Uses the user's token for RLS-protected operations
+   - References the new 'comments' table instead of 'photo_comments'
+   - Uses 'body' field instead of 'comment' field
+   - Doesn't set family_id (trigger handles it)
+   - Doesn't set updated_at (trigger handles it)
+
+2. For the PhotoModal component (src/components/PhotoModal.tsx):
+   - Updates the Comment interface to use 'body' instead of 'comment'
+   - Updates to use 'updated_at' instead of 'edited_at'
+   - All references to comment.comment changed to comment.body
+   - All references to edited_at changed to updated_at

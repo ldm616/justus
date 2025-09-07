@@ -50,45 +50,28 @@ const Signup: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const uploadAvatar = async (userId: string) => {
-    if (!avatarFile) return null;
-
+  const uploadAvatar = async (userId: string, file: File): Promise<string | null> => {
     try {
-      const fileExt = avatarFile.name.split('.').pop();
-      const fileName = `${userId}-${Date.now()}.${fileExt}`;
-
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const path = `public/${userId}.${fileExt}`;
+      
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, avatarFile, { cacheControl: '31536000', upsert: true });
+        .upload(path, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data } = supabase.storage
         .from('avatars')
-        .getPublicUrl(fileName);
+        .getPublicUrl(path);
 
-      return publicUrl;
+      return data?.publicUrl ?? null;
     } catch (err) {
       console.error('Error uploading avatar:', err);
-      return null;
+      throw err; // Propagate error to be handled in submit
     }
   };
 
-  const createProfile = async (userId: string, username: string, avatarUrl: string | null) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .insert([{ 
-          id: userId,
-          username,
-          avatar_url: avatarUrl
-        }]);
-      
-      if (error) throw error;
-    } catch (err) {
-      console.error('Error creating profile:', err);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,19 +90,41 @@ const Signup: React.FC = () => {
       return;
     }
 
+    if (!avatarFile) {
+      setError('Profile photo is required');
+      setLoading(false);
+      return;
+    }
+
     try {
+      // 1) Sign up with username in metadata
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
+        options: { data: { username: username.trim() } }
       });
 
       if (signUpError) throw signUpError;
+      
+      const user = data.user;
+      if (!user) throw new Error('No user returned from signUp.');
 
-      if (data.user) {
-        const avatarUrl = await uploadAvatar(data.user.id);
-        await createProfile(data.user.id, username.trim(), avatarUrl);
-        navigate('/');
-      }
+      // 2) Upload avatar (mandatory)
+      const avatar_url = await uploadAvatar(user.id, avatarFile);
+
+      // 3) Update the profile row created by DB trigger
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          username: username.trim(), 
+          avatar_url 
+        })
+        .eq('id', user.id);
+      
+      if (updateError) throw updateError;
+
+      // 4) Navigate to home
+      navigate('/');
     } catch (err: any) {
       setError(err.message || 'Failed to sign up');
     } finally {
@@ -198,6 +203,7 @@ const Signup: React.FC = () => {
                 className="form-input"
                 placeholder="Choose a username"
                 maxLength={15}
+                autoComplete="username"
                 required
               />
             </div>
@@ -213,6 +219,7 @@ const Signup: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   className="form-input pr-10"
                   placeholder=""
+                  autoComplete="new-password"
                   required
                 />
                 <button
