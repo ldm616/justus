@@ -1,6 +1,8 @@
+import { BUILD_INFO } from '../buildInfo';
+
 export default function DeploymentFooter() {
-  // This will be replaced at build time
-  const deploymentTime = new Date().toLocaleString('en-US', {
+  // Use the build time from BUILD_INFO
+  const deploymentTime = new Date(BUILD_INFO.lastUpdated).toLocaleString('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
