@@ -50,27 +50,6 @@ const Signup: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const uploadAvatar = async (userId: string, file: File): Promise<string | null> => {
-    try {
-      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const path = `public/${userId}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(path, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(path);
-
-      return data?.publicUrl ?? null;
-    } catch (err) {
-      console.error('Error uploading avatar:', err);
-      throw err; // Propagate error to be handled in submit
-    }
-  };
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,31 +76,60 @@ const Signup: React.FC = () => {
     }
 
     try {
-      // 1) Sign up with username in metadata
+      // 1) First upload avatar to get the URL (use a temporary unique name)
+      const tempId = crypto.randomUUID();
+      const fileExt = avatarFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const tempPath = `temp/${tempId}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(tempPath, avatarFile, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(tempPath);
+      
+      const avatar_url = urlData?.publicUrl;
+      if (!avatar_url) throw new Error('Failed to get avatar URL');
+
+      // 2) Sign up with both username AND avatar_url in metadata
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { data: { username: username.trim() } }
+        options: { 
+          data: { 
+            username: username.trim(),
+            avatar_url: avatar_url
+          } 
+        }
       });
 
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        // Clean up temp avatar if signup fails
+        await supabase.storage.from('avatars').remove([tempPath]);
+        throw signUpError;
+      }
       
       const user = data.user;
-      if (!user) throw new Error('No user returned from signUp.');
+      if (!user) {
+        // Clean up temp avatar if no user returned
+        await supabase.storage.from('avatars').remove([tempPath]);
+        throw new Error('No user returned from signUp.');
+      }
 
-      // 2) Upload avatar (mandatory)
-      const avatar_url = await uploadAvatar(user.id, avatarFile);
-
-      // 3) Update the profile row created by DB trigger
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          username: username.trim(), 
-          avatar_url 
-        })
-        .eq('id', user.id);
+      // 3) Move avatar from temp to final location
+      const finalPath = `public/${user.id}.${fileExt}`;
+      const { error: moveError } = await supabase.storage
+        .from('avatars')
+        .move(tempPath, finalPath);
       
-      if (updateError) throw updateError;
+      if (moveError) {
+        // If move fails, copy and delete instead
+        await supabase.storage.from('avatars').copy(tempPath, finalPath);
+        await supabase.storage.from('avatars').remove([tempPath]);
+      }
 
       // 4) Navigate to home
       navigate('/');
