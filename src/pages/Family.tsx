@@ -47,7 +47,7 @@ export default function Family() {
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const navigate = useNavigate();
-  const { profile, updateProfile } = useUser();
+  const { profile, refresh } = useUser();
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -157,9 +157,9 @@ export default function Family() {
           setInvitations(invitesData || []);
         }
 
-        // Update profile context if it doesn't have familyId
+        // Refresh profile context if it doesn't have familyId
         if (!profile.familyId && familyId) {
-          await updateProfile({ familyId });
+          await refresh();
         }
       } else {
         // Also check if user is already in a family via family_members
@@ -176,7 +176,7 @@ export default function Family() {
             .update({ family_id: memberData.family_id })
             .eq('id', profile.id);
           
-          await updateProfile({ familyId: memberData.family_id });
+          await refresh();
           // Reload with the family_id
           await loadFamilyData();
           return;
@@ -218,8 +218,8 @@ export default function Family() {
 
       const familyData = await response.json();
 
-      // Update the profile in context
-      await updateProfile({ familyId: familyData.id });
+      // Refresh the profile in context
+      await refresh();
 
       setFamily(familyData);
       setIsAdmin(true);

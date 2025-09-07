@@ -97,9 +97,9 @@ export default function Header() {
           {currentUser && !isAuthPage ? (
             <Link to="/profile" className="flex items-center space-x-2 text-white">
               <div className="relative w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                {profile?.avatarUrl ? (
+                {profile?.avatar_url ? (
                   <img 
-                    src={profile.avatarUrl} 
+                    src={profile.avatar_url} 
                     alt={profile?.username || 'User'} 
                     className="avatar w-8 h-8"
                   />

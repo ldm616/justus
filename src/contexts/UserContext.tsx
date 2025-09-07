@@ -34,8 +34,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
 
   useEffect(() => {
-    let isMounted = true;
-
     fetchProfile();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, _session) => {
@@ -45,7 +43,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       subscription.unsubscribe();
-      isMounted = false;
     };
   }, []);
 

@@ -224,7 +224,7 @@ function Profile() {
   const [currentEmail, setCurrentEmail] = useState('');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { profile, updateProfile } = useUser();
+  const { profile, refresh } = useUser();
 
   const handleClose = useCallback(() => {
     navigate('/');
@@ -242,7 +242,7 @@ function Profile() {
 
       if (profile) {
         setUsername(profile.username || '');
-        setAvatarUrl(profile.avatarUrl);
+        setAvatarUrl(profile.avatar_url);
       }
       setLoading(false);
     };
@@ -282,9 +282,16 @@ function Profile() {
         .from('avatars')
         .getPublicUrl(fileName);
 
-      await updateProfile({
-        avatarUrl: publicUrl
-      });
+      // Update profile directly in database
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', session.user.id);
+      
+      if (updateError) throw updateError;
+      
+      // Refresh the profile in context
+      await refresh();
 
       setAvatarUrl(publicUrl);
       setSuccessMessage('Avatar updated successfully!');
@@ -381,7 +388,7 @@ function Profile() {
                   className="w-full inline-flex justify-center items-center btn-secondary"
                 >
                   <Users className="w-4 h-4 mr-2" />
-                  {profile?.isAdmin ? 'Manage family' : 'View family'}
+                  View family
                 </Link>
 
                 <button
@@ -418,7 +425,19 @@ function Profile() {
           currentUsername={username}
           onSave={async (newUsername) => {
             try {
-              await updateProfile({ username: newUsername });
+              // Update username directly in database
+              const { data: { session } } = await supabase.auth.getSession();
+              if (!session) throw new Error('No session');
+              
+              const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ username: newUsername })
+                .eq('id', session.user.id);
+              
+              if (updateError) throw updateError;
+              
+              // Refresh the profile in context
+              await refresh();
               setUsername(newUsername);
               setSuccessMessage('Username updated successfully!');
               setTimeout(() => setSuccessMessage(null), 3000);
