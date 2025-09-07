@@ -81,7 +81,7 @@ export default function Profile() {
 
   const handleLogout = async () => {
     await signOut()
-    navigate('/login')
+    navigate('/')
   }
 
   return (
