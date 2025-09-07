@@ -1,15 +1,9 @@
 import { useAuth } from '../contexts/AuthContext'
-import { useNavigate } from 'react-router-dom'
-import { LogOut, User } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { User } from 'lucide-react'
 
 export default function Home() {
-  const { user, profile, signOut } = useAuth()
-  const navigate = useNavigate()
-
-  const handleLogout = async () => {
-    await signOut()
-    navigate('/login')
-  }
+  const { user, profile } = useAuth()
 
   return (
     <div className="min-h-screen">
@@ -18,28 +12,23 @@ export default function Home() {
           <div className="flex justify-between items-center h-16">
             <h1 className="text-2xl font-bold">JustUs</h1>
             
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                {profile?.avatar_url ? (
-                  <img 
-                    src={profile.avatar_url} 
-                    alt={profile.username}
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                ) : (
+            <Link 
+              to="/profile" 
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
+              {profile?.avatar_url ? (
+                <img 
+                  src={profile.avatar_url} 
+                  alt={profile.username}
+                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-600"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center border-2 border-gray-600">
                   <User size={20} />
-                )}
-                <span>{profile?.username || user?.email}</span>
-              </div>
-              
-              <button
-                onClick={handleLogout}
-                className="btn-secondary flex items-center gap-2"
-              >
-                <LogOut size={20} />
-                Logout
-              </button>
-            </div>
+                </div>
+              )}
+              <span className="font-medium">{profile?.username || 'Profile'}</span>
+            </Link>
           </div>
         </div>
       </header>

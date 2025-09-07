@@ -115,7 +115,6 @@ export default function Signup() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input w-full"
-                placeholder="you@example.com"
                 required
                 autoFocus
               />
@@ -130,7 +129,6 @@ export default function Signup() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="input w-full"
-                placeholder="johndoe"
                 required
                 minLength={3}
                 maxLength={20}
@@ -149,7 +147,6 @@ export default function Signup() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input w-full pr-10"
-                  placeholder="••••••••"
                   required
                   minLength={6}
                 />
@@ -176,7 +173,6 @@ export default function Signup() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="input w-full pr-10"
-                  placeholder="••••••••"
                   required
                 />
               </div>
