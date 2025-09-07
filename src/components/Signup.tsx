@@ -7,7 +7,6 @@ export default function Signup() {
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -31,11 +30,6 @@ export default function Signup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      return
-    }
 
     if (password.length < 6) {
       setError('Password must be at least 6 characters')
@@ -161,21 +155,6 @@ export default function Signup() {
               <p className="text-xs text-gray-400 mt-1">
                 Must be at least 6 characters
               </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input w-full pr-10"
-                  required
-                />
-              </div>
             </div>
 
             <button
