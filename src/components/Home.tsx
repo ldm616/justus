@@ -15,6 +15,7 @@ export default function Home() {
             <Link 
               to="/profile" 
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              title={profile?.username || 'Profile'}
             >
               {profile?.avatar_url ? (
                 <img 
@@ -27,7 +28,7 @@ export default function Home() {
                   <User size={20} />
                 </div>
               )}
-              <span className="font-medium">{profile?.username || 'Profile'}</span>
+              <span className="font-medium">{profile?.username}</span>
             </Link>
           </div>
         </div>

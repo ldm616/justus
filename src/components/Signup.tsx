@@ -1,31 +1,16 @@
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Camera } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { auth } from '../lib/auth'
 
 export default function Signup() {
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [avatarFile, setAvatarFile] = useState<File | null>(null)
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setAvatarFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,7 +24,7 @@ export default function Signup() {
     setLoading(true)
 
     try {
-      await auth.signup(email, password, username, avatarFile || undefined)
+      await auth.signup(email, password, username)
       navigate('/')
     } catch (err: any) {
       if (err.message?.includes('duplicate')) {
@@ -71,34 +56,6 @@ export default function Signup() {
                 {error}
               </div>
             )}
-
-            {/* Avatar Upload */}
-            <div className="flex flex-col items-center">
-              <label className="relative cursor-pointer group">
-                <div className="w-24 h-24 rounded-full bg-gray-700 flex items-center justify-center overflow-hidden">
-                  {avatarPreview ? (
-                    <img
-                      src={avatarPreview}
-                      alt="Avatar preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Camera className="w-10 h-10 text-gray-400" />
-                  )}
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-                    <Camera className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="hidden"
-                />
-              </label>
-              <p className="text-sm text-gray-400 mt-2">Add profile photo (optional)</p>
-            </div>
 
             <div>
               <label className="block text-sm font-medium mb-2">
