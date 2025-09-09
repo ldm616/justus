@@ -24,7 +24,7 @@ export default function CreateFamily({ onFamilyCreated }: CreateFamilyProps) {
       }
 
       // Create the family
-      const { data: family, error: familyError } = await supabase
+      const { error: familyError } = await supabase
         .from('families')
         .insert({
           name: familyName.trim(),

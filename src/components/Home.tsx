@@ -27,7 +27,7 @@ export default function Home() {
         setFamily(familyData.families)
         
         // Load family members
-        const members = await auth.getFamilyMembers(familyData.families.id)
+        const members = await auth.getFamilyMembers(familyData.families[0].id)
         setFamilyMembers(members || [])
       }
     } catch (error) {
